@@ -1,54 +1,50 @@
 // ─────────────────────────────────────────────
 // FILE: src/pages/user-management/index.tsx
-//
-// User Management page.
-// This file only orchestrates state + renders
-// sub-components. Business logic lives in hooks,
-// UI lives in ./components/
-//
-// FOLDER STRUCTURE:
-//   user-management/
-//   ├── index.tsx                  ← YOU ARE HERE
-//   ├── types.ts                   ← User type
-//   └── components/
-//       ├── user-view-modal.tsx    ← Eye icon modal
-//       ├── user-form-modal.tsx    ← Add/Edit form
-//       └── delete-user-dialog.tsx ← Delete confirm
+// With pagination, toasts, polished layout
 // ─────────────────────────────────────────────
 
 import { useState, useMemo } from "react";
-import { EyeIcon, PencilIcon, Trash2Icon, PlusIcon, UploadIcon, RefreshCwIcon, UserIcon } from "lucide-react";
+import {
+  EyeIcon,
+  PencilIcon,
+  Trash2Icon,
+  PlusIcon,
+  UploadIcon,
+  RefreshCwIcon,
+  UserIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Common components
-import PageHeader      from "@/components/page-header";
-import TableCard       from "@/components/table-card";
-import DataTable       from "@/components/data-table";
+import PageHeader from "@/components/page-header";
+import TableCard from "@/components/table-card";
+import DataTable from "@/components/data-table";
 import SearchFilterBar from "@/components/search-filter-bar";
-import RoleBadge       from "@/components/role-badge";
-
+import RoleBadge from "@/components/role-badge";
+import { usePagination } from "@/components/table-pagination";
+import { useToast } from "@/components/toast-notification";
 import type { ColumnDef, RowAction } from "@/types/table";
 
-// Page-specific components
-import UserViewModal     from "./components/user-view-modal";
-import UserFormModal     from "./components/user-form-modal";
-import DeleteUserDialog  from "./components/delete-user-dialog";
+import UserViewModal from "./components/user-view-modal";
+import UserFormModal from "./components/user-form-modal";
+import DeleteUserDialog from "./components/delete-user-dialog";
 
-// Data & types
 import type { User, UserFormData } from "./types";
-import { MOCK_USERS }               from "@/mockdata/users";
-import { PRIMARY_ROLE_OPTIONS }     from "@/constants/enum";
-
-// ── Empty form ───────────────────────────────
+import { MOCK_USERS } from "@/mockdata/users";
+import { PRIMARY_ROLE_OPTIONS } from "@/constants/enum";
+import { USER_MESSAGES } from "@/constants/messages";
 
 const EMPTY_FORM: UserFormData = {
-  empId: "", fullName: "", mobile: "", email: "",
-  primaryRole: "user_labor", customRole: null,
-  designation: "", reportingSupervisor: null,
-  reportingManager: null, roleLockStatus: "not_locked",
+  empId: "",
+  fullName: "",
+  mobile: "",
+  email: "",
+  primaryRole: "user_labor",
+  customRole: null,
+  designation: "",
+  reportingSupervisor: null,
+  reportingManager: null,
+  roleLockStatus: "not_locked",
 };
-
-// ── Column definitions ───────────────────────
 
 const USER_COLUMNS: ColumnDef<User>[] = [
   {
@@ -56,7 +52,9 @@ const USER_COLUMNS: ColumnDef<User>[] = [
     header: "Emp ID",
     width: "w-28",
     render: (u) => (
-      <span className="text-xs font-semibold text-foreground">{u.empId}</span>
+      <span className="font-mono text-xs font-bold text-foreground">
+        {u.empId}
+      </span>
     ),
   },
   {
@@ -64,10 +62,12 @@ const USER_COLUMNS: ColumnDef<User>[] = [
     header: "Name",
     render: (u) => (
       <div className="flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-          <UserIcon className="w-3.5 h-3.5 text-primary" />
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <UserIcon className="w-4 h-4 text-primary" />
         </div>
-        <span className="font-medium text-foreground text-sm">{u.fullName}</span>
+        <span className="font-medium text-foreground text-sm">
+          {u.fullName}
+        </span>
       </div>
     ),
   },
@@ -75,13 +75,19 @@ const USER_COLUMNS: ColumnDef<User>[] = [
     key: "mobile",
     header: "Mobile",
     hideBelow: "lg",
-    render: (u) => <span className=" text-xs text-muted-foreground">{u.mobile}</span>,
+    render: (u) => (
+      <span className="font-mono text-xs text-muted-foreground">
+        {u.mobile}
+      </span>
+    ),
   },
   {
     key: "email",
     header: "Email",
     hideBelow: "lg",
-    render: (u) => <span className="text-xs text-muted-foreground">{u.email}</span>,
+    render: (u) => (
+      <span className="text-xs text-muted-foreground">{u.email}</span>
+    ),
   },
   {
     key: "primaryRole",
@@ -90,30 +96,25 @@ const USER_COLUMNS: ColumnDef<User>[] = [
   },
 ];
 
-// ── Page ─────────────────────────────────────
-
 export default function UserManagementPage() {
+  const toast = useToast();
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
-
-  // Search & filter
-  const [search,     setSearch]     = useState("");
+  const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-
-  // Modal states
-  const [viewUser,   setViewUser]   = useState<User | null>(null);
-  const [editUser,   setEditUser]   = useState<User | null>(null);
+  const [viewUser, setViewUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
-  const [isAddOpen,  setIsAddOpen]  = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [form, setForm] = useState<UserFormData>(EMPTY_FORM);
+  const [formErrors, setFormErrors] = useState<
+    Partial<Record<keyof User, string>>
+  >({});
 
-  // Form
-  const [form,       setForm]       = useState<UserFormData>(EMPTY_FORM);
-  const [formErrors, setFormErrors] = useState<Partial<Record<keyof User, string>>>({});
-
-  // Filtered data
   const filteredUsers = useMemo(() => {
     const q = search.toLowerCase();
     return users.filter((u) => {
-      const matchSearch = !q ||
+      const matchSearch =
+        !q ||
         u.fullName.toLowerCase().includes(q) ||
         u.empId.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
@@ -123,75 +124,98 @@ export default function UserManagementPage() {
     });
   }, [users, search, roleFilter]);
 
-  // ── Handlers ──────────────────────────────
+  const { paginated, PaginationBar } = usePagination(filteredUsers);
 
   function openAdd() {
     setForm(EMPTY_FORM);
     setFormErrors({});
     setIsAddOpen(true);
   }
-
   function openEdit(user: User) {
     setForm({ ...user });
     setFormErrors({});
     setEditUser(user);
   }
 
-  function validateForm(): boolean {
+  function validate(): boolean {
     const e: Partial<Record<keyof User, string>> = {};
-    if (!form.empId.trim())       e.empId       = "Employee ID is required.";
-    if (!form.fullName.trim())    e.fullName     = "Full name is required.";
-    if (!form.mobile.trim())      e.mobile       = "Mobile number is required.";
-    if (!form.email.trim())       e.email        = "Email is required.";
+    if (!form.empId.trim()) e.empId = "Employee ID is required.";
+    if (!form.fullName.trim()) e.fullName = "Full name is required.";
+    if (!form.mobile.trim()) e.mobile = "Mobile number is required.";
+    if (!form.email.trim()) e.email = "Email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-                                  e.email        = "Enter a valid email.";
-    if (!form.designation.trim()) e.designation  = "Designation is required.";
+      e.email = "Enter a valid email.";
+    if (!form.designation.trim()) e.designation = "Designation is required.";
     setFormErrors(e);
     return Object.keys(e).length === 0;
   }
 
   function handleSaveAdd() {
-    if (!validateForm()) return;
+    if (!validate()) return;
     setUsers((prev) => [...prev, { ...form, id: Date.now().toString() }]);
     setIsAddOpen(false);
+    toast.success(USER_MESSAGES.CREATE_SUCCESS);
   }
 
   function handleSaveEdit() {
-    if (!validateForm() || !editUser) return;
-    setUsers((prev) => prev.map((u) => u.id === editUser.id ? { ...form, id: editUser.id } : u));
+    if (!validate() || !editUser) return;
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === editUser.id ? { ...form, id: editUser.id } : u,
+      ),
+    );
     setEditUser(null);
+    toast.success(USER_MESSAGES.UPDATE_SUCCESS);
   }
 
   function handleDelete() {
     if (!deleteUser) return;
     setUsers((prev) => prev.filter((u) => u.id !== deleteUser.id));
     setDeleteUser(null);
+    toast.deleted(USER_MESSAGES.DELETE_SUCCESS);
   }
 
-  // ── Row actions ────────────────────────────
-
   const rowActions: RowAction<User>[] = [
-    { icon: <EyeIcon    className="w-4 h-4" />, label: "View",   onClick: setViewUser },
-    { icon: <PencilIcon className="w-4 h-4" />, label: "Edit",   onClick: openEdit },
-    { icon: <Trash2Icon className="w-4 h-4" />, label: "Delete", onClick: setDeleteUser, danger: true },
+    {
+      icon: <EyeIcon className="w-4 h-4" />,
+      label: "View",
+      onClick: setViewUser,
+    },
+    {
+      icon: <PencilIcon className="w-4 h-4" />,
+      label: "Edit",
+      onClick: openEdit,
+    },
+    {
+      icon: <Trash2Icon className="w-4 h-4" />,
+      label: "Delete",
+      onClick: setDeleteUser,
+      danger: true,
+    },
   ];
-
-  // ── Render ─────────────────────────────────
 
   return (
     <div className="space-y-6">
-
-      {/* Page header */}
       <PageHeader
-        title="All Users"
+        title="User Management"
         subtitle="Manage system users, roles, and permissions"
       >
-        <Button variant="outline" size="sm" className="gap-2"
-          onClick={() => alert("Sync — connect to API")}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => {
+            toast.info(USER_MESSAGES.SYNC_SUCCESS);
+          }}
+        >
           <RefreshCwIcon className="w-4 h-4" /> True-in Sync
         </Button>
-        <Button variant="outline" size="sm" className="gap-2"
-          onClick={() => alert("Import — connect to file upload")}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => toast.info(USER_MESSAGES.IMPORT_SUCCESS)}
+        >
           <UploadIcon className="w-4 h-4" /> Import Data
         </Button>
         <Button size="sm" className="gap-2" onClick={openAdd}>
@@ -199,12 +223,10 @@ export default function UserManagementPage() {
         </Button>
       </PageHeader>
 
-      {/* Table card */}
       <TableCard
         title="All Users"
         description="Search and manage all system users"
         count={filteredUsers.length}
-        footer={`Showing ${filteredUsers.length} of ${users.length} users`}
         searchArea={
           <SearchFilterBar
             search={search}
@@ -214,7 +236,7 @@ export default function UserManagementPage() {
               {
                 value: roleFilter,
                 onChange: setRoleFilter,
-                placeholder: "Filter by role",
+                placeholder: "All Roles",
                 options: [
                   { value: "all", label: "All Roles" },
                   ...PRIMARY_ROLE_OPTIONS,
@@ -226,21 +248,24 @@ export default function UserManagementPage() {
       >
         <DataTable
           columns={USER_COLUMNS}
-          data={filteredUsers}
+          data={paginated}
           actions={rowActions}
           emptyMessage="No users found. Try adjusting your search or filters."
         />
+        <PaginationBar />
       </TableCard>
 
-      {/* Modals */}
-      <UserViewModal    user={viewUser}   onClose={() => setViewUser(null)} />
+      <UserViewModal user={viewUser} onClose={() => setViewUser(null)} />
       <UserFormModal
         open={isAddOpen || !!editUser}
         mode={isAddOpen ? "add" : "edit"}
         form={form}
         errors={formErrors}
-        onChange={(field, value) => setForm((prev) => ({ ...prev, [field]: value }))}
-        onClose={() => { setIsAddOpen(false); setEditUser(null); }}
+        onChange={(f, v) => setForm((p) => ({ ...p, [f]: v }))}
+        onClose={() => {
+          setIsAddOpen(false);
+          setEditUser(null);
+        }}
         onSubmit={isAddOpen ? handleSaveAdd : handleSaveEdit}
       />
       <DeleteUserDialog
