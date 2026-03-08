@@ -305,7 +305,9 @@ export function CreateAssessmentDialog({ open, onOpenChange, onSave, initialData
         </div>
 
         <Separator />
-        <DialogFooter className="px-6 flex-row justify-between w-full">
+        
+        {/* CSS FIX: Replaced <DialogFooter> with a standard flex div to force perfect left/right alignment */}
+        <div className="flex items-center justify-between w-full px-6 py-4 mt-auto">
           <Button variant="outline" onClick={handleBack} disabled={step === 1} className="w-24">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
@@ -314,7 +316,7 @@ export function CreateAssessmentDialog({ open, onOpenChange, onSave, initialData
           ) : (
             <Button onClick={handleSave}><CheckCircle2 className="w-4 h-4 mr-2" /> {initialData ? "Save Changes" : "Publish"}</Button>
           )}
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

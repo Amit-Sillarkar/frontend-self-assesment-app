@@ -8,8 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Users, FileQuestion, GitMerge, Search, Filter, MoreVertical, Eye, Edit, Trash } from "lucide-react";
 import { initialAssessments } from "@/mockdata/assessments";
-import {type Assessment } from "./types";
+import { type Assessment } from "./types";
 import { CreateAssessmentDialog } from "./components/create-assessment-dialog";
+import { ViewAssessmentDialog } from "./components/view-assessment-dialog";
+
+// Import our new cleanly built Custom Component
+import { ConfirmationModal } from "@/components/common/confirmation-modal";
 
 const formatDesignation = (id: string) => {
   return id.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -19,8 +23,9 @@ export default function AssessmentBuilderPage() {
   const [assessments, setAssessments] = useState<Assessment[]>(initialAssessments);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
-
-  // Filters State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
+  const [viewingAssessment, setViewingAssessment] = useState<Assessment | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [designationFilter, setDesignationFilter] = useState("all");
 
@@ -44,15 +49,27 @@ export default function AssessmentBuilderPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this assessment?")) {
-      setAssessments(prev => prev.filter(a => a.id !== id));
+  const handleDeleteClick = (id: string) => {
+    setAssessmentToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  
+  const handleConfirmDelete = () => {
+    if (assessmentToDelete) {
+      setAssessments(prev => prev.filter(a => a.id !== assessmentToDelete));
+      setAssessmentToDelete(null);
+      setIsDeleteModalOpen(false); // Close Modal
     }
   };
 
+  const handleCancelDelete = () => {
+    setAssessmentToDelete(null);
+    setIsDeleteModalOpen(false);
+  };
+
   const handleView = (assessment: Assessment) => {
-    // Basic alert for View logic, or implement a detailed View Dialog similar to Create Dialog
-    alert(`Viewing Details:\nTitle: ${assessment.title}\nQuestions: ${assessment.questions.length}\nHierarchy: ${assessment.hierarchy}`);
+    setViewingAssessment(assessment);
   };
 
   // Filter Logic
@@ -65,9 +82,7 @@ export default function AssessmentBuilderPage() {
   return (
     <div className="flex-1 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <PageHeader 
-          title="Assessment Builder" 
-        />
+        <PageHeader title="Assessment Builder" />
         <Button onClick={handleCreateNew}>
           <Plus className="w-4 h-4 mr-2" />
           Create Assessment
@@ -107,7 +122,6 @@ export default function AssessmentBuilderPage() {
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {filteredAssessments.map((assessment) => (
           <Card key={assessment.id} className="flex flex-col relative group">
-            {/* ACTION MENU */}
             <div className="absolute top-3 right-3 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-background/80 rounded-md">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -123,7 +137,7 @@ export default function AssessmentBuilderPage() {
                     <Edit className="w-4 h-4 mr-2 text-muted-foreground" /> Edit
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleDelete(assessment.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                  <DropdownMenuItem onClick={() => handleDeleteClick(assessment.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                     <Trash className="w-4 h-4 mr-2" /> Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -170,6 +184,21 @@ export default function AssessmentBuilderPage() {
         onOpenChange={setIsModalOpen} 
         onSave={handleSaveAssessment} 
         initialData={editingAssessment}
+      />
+
+      {/* USING THE NEW CUSTOM COMMON COMPONENT HERE */}
+      <ConfirmationModal
+        open={isDeleteModalOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Assessment"
+        message="Are you sure you want to delete this assessment? This action cannot be undone."
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+      />
+      <ViewAssessmentDialog 
+        assessment={viewingAssessment} 
+        onClose={() => setViewingAssessment(null)} 
       />
     </div>
   );
