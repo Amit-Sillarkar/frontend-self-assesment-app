@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ChevronRightIcon, ChevronLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,13 +9,13 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import WizardStepper        from "./wizard-stepper";
-import Step1DefineRole      from "./step1-define-role";
+import WizardStepper from "./wizard-stepper";
+import Step1DefineRole from "./step1-define-role";
 import Step2SelectEmployees from "./step2-select-employees";
-import Step3SetPermissions  from "./step3-set-permissions";
+import Step3SetPermissions from "./step3-set-permissions";
 
-import type { PermissionKey }       from "@/constants/enum";
-import { ROLE_MESSAGES }            from "@/constants/messages";
+import type { PermissionKey } from "@/constants/enum";
+import { ROLE_MESSAGES } from "@/constants/messages";
 import type { CustomRoleFormData } from "../types";
 
 // ── Empty form ───────────────────────────────
@@ -31,7 +30,7 @@ const EMPTY: CustomRoleFormData = {
 
 interface Props {
   open: boolean;
-  existingRoleNames: string[];       // for uniqueness check
+  existingRoleNames: string[]; // for uniqueness check
   onClose: () => void;
   onSubmit: (data: CustomRoleFormData) => void;
 }
@@ -44,8 +43,8 @@ export default function CreateRoleWizard({
   onClose,
   onSubmit,
 }: Props) {
-  const [step,   setStep]   = useState(1);
-  const [form,   setForm]   = useState<CustomRoleFormData>(EMPTY);
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState<CustomRoleFormData>(EMPTY);
   const [errors, setErrors] = useState({ step1: "", step2: "", step3: "" });
 
   function resetAndClose() {
@@ -66,7 +65,10 @@ export default function CreateRoleWizard({
       .map((n) => n.toLowerCase())
       .includes(form.roleName.trim().toLowerCase());
     if (isDuplicate) {
-      setErrors((e) => ({ ...e, step1: ROLE_MESSAGES.ROLE_EXISTS(form.roleName.trim()) }));
+      setErrors((e) => ({
+        ...e,
+        step1: ROLE_MESSAGES.ROLE_EXISTS(form.roleName.trim()),
+      }));
       return false;
     }
     setErrors((e) => ({ ...e, step1: "" }));
@@ -119,21 +121,33 @@ export default function CreateRoleWizard({
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
-      <DialogContent className="max-w-xl w-full max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create Custom Role — 3-Step Wizard</DialogTitle>
-          <DialogDescription>
-            Follow the steps to define a custom role and assign it to employees
-          </DialogDescription>
+      <DialogContent className="sm:max-w-[650px] w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4 border-b">
+          <div className="flex flex-col gap-1">
+            <DialogTitle className="text-xl font-semibold tracking-tight">
+              Create Custom Role
+            </DialogTitle>
+
+            <p className="text-xs text-primary uppercase tracking-wide">
+              3-Step Setup Wizard
+            </p>
+
+            <DialogDescription className="text-sm text-muted-foreground max-w-md">
+              Define a role, assign employees, and configure permissions in
+              three quick steps.
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
         {/* Stepper */}
-        <div className="py-2">
-          <WizardStepper currentStep={step} />
+        <div className="py-2 flex justify-center w-full">
+          <div className="w-full max-w-md">
+            <WizardStepper currentStep={step} />
+          </div>
         </div>
 
         {/* Step content */}
-        <div className="min-h-[280px]">
+        <div className="min-h-70">
           {step === 1 && (
             <Step1DefineRole
               roleName={form.roleName}
@@ -144,14 +158,18 @@ export default function CreateRoleWizard({
           {step === 2 && (
             <Step2SelectEmployees
               selected={form.assignedEmployeeIds}
-              onChange={(ids) => setForm((f) => ({ ...f, assignedEmployeeIds: ids }))}
+              onChange={(ids) =>
+                setForm((f) => ({ ...f, assignedEmployeeIds: ids }))
+              }
               error={errors.step2}
             />
           )}
           {step === 3 && (
             <Step3SetPermissions
               selected={form.permissions as PermissionKey[]}
-              onChange={(perms) => setForm((f) => ({ ...f, permissions: perms }))}
+              onChange={(perms) =>
+                setForm((f) => ({ ...f, permissions: perms }))
+              }
               error={errors.step3}
             />
           )}
@@ -159,8 +177,13 @@ export default function CreateRoleWizard({
 
         {/* Footer navigation */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
-          <Button variant="outline" onClick={step === 1 ? resetAndClose : handleBack}>
-            {step === 1 ? "Cancel" : (
+          <Button
+            variant="outline"
+            onClick={step === 1 ? resetAndClose : handleBack}
+          >
+            {step === 1 ? (
+              "Cancel"
+            ) : (
               <span className="flex items-center gap-1">
                 <ChevronLeftIcon className="w-4 h-4" /> Back
               </span>

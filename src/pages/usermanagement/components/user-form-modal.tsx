@@ -80,7 +80,7 @@ export default function UserFormModal({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[650px] w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === "add" ? "Add New User" : "Edit User"}</DialogTitle>
           <DialogDescription>

@@ -1,5 +1,5 @@
 import { ROUTE_PATHS } from "@/constants/enum";
-import { PaletteIcon, LayoutIcon, UsersIcon, BrickWallShieldIcon } from "lucide-react";
+import { PaletteIcon, LayoutIcon, UsersIcon, BrickWallShieldIcon, FileSignatureIcon } from "lucide-react";
 
 // ─────────────────────────────────────────────
 // SIDEBAR MENU ITEMS
@@ -37,5 +37,11 @@ export const menuItems = [
     label: "Custom Roles",
     icon: BrickWallShieldIcon,
     path: ROUTE_PATHS.CUSTOM_ROLES,
+  },
+  {
+    key: "assessment-builder",
+    label: "Assessment Builder",
+    icon: FileSignatureIcon,  
+    path: ROUTE_PATHS.ASSESSMENT_BUILDER,
   },
 ];

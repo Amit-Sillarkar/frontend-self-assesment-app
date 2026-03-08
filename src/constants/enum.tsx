@@ -17,11 +17,13 @@ export const ROUTE_PATHS = {
   COMPONENTS: "/dashboard/components",
   USER_MANAGEMENT: "/dashboard/user-management",
   CUSTOM_ROLES: "/dashboard/custom-roles",
+  ASSESSMENT_BUILDER: "/dashboard/assessment-builder",
 };
 
 export const NAV_ITEM_KEYS = {
   COLORS: "colors",
   COMPONENTS: "components",
+  ASSESSMENT_BUILDER: "assessment-builder",
 };
 
 export const HTTP_METHODS = {

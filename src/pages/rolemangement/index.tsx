@@ -295,7 +295,7 @@ function RoleViewModal({
     if (!role) return null;
     return (
         <Dialog open={!!role} onOpenChange={onClose}>
-            <DialogContent className="max-w-lg w-full max-h-[85vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[650px] w-[95vw] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <ShieldIcon className="w-5 h-5 text-primary" />

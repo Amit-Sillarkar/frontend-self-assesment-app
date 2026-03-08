@@ -45,7 +45,7 @@ function DetailField({
 export default function UserViewModal({ user, onClose }: Props) {
   return (
     <Dialog open={!!user} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg w-full">
+      <DialogContent className="sm:max-w-[650px] w-[95vw] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>User Details</DialogTitle>
           <DialogDescription>Complete information about the user</DialogDescription>
@@ -55,7 +55,7 @@ export default function UserViewModal({ user, onClose }: Props) {
           <div className="space-y-5">
             {/* Profile row */}
             <div className="flex items-center gap-4 p-4 bg-secondary/40 rounded-xl border border-border">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <UserIcon className="w-7 h-7 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
