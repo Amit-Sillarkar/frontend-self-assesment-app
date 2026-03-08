@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -306,7 +306,6 @@ export function CreateAssessmentDialog({ open, onOpenChange, onSave, initialData
 
         <Separator />
         
-        {/* CSS FIX: Replaced <DialogFooter> with a standard flex div to force perfect left/right alignment */}
         <div className="flex items-center justify-between w-full px-6 py-4 mt-auto">
           <Button variant="outline" onClick={handleBack} disabled={step === 1} className="w-24">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
