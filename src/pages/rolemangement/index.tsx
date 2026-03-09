@@ -13,16 +13,17 @@ import PageHeader from "@/components/page-header";
 import TableCard from "@/components/table-card";
 import DataTable from "@/components/data-table";
 import SearchFilterBar from "@/components/search-filter-bar";
+import { ConfirmationModal } from "@/components/common/confirmation-modal";
 import type { ColumnDef, RowAction } from "@/types/table";
 
 // Page components
 import CreateRoleWizard from "./components/create-role-wizard";
-import DeleteRoleDialog from "./components/delete-role-dialog";
 
 // Data & types
 import { MOCK_CUSTOM_ROLES } from "@/mockdata/custom-roles";
 import type { CustomRole, CustomRoleFormData } from "./types";
 import { PERMISSION_GROUPS } from "@/constants/enum";
+import { ROLE_MESSAGES } from "@/constants/messages";
 import { ASSIGNABLE_EMPLOYEES } from "@/mockdata/users";
 import {
     Dialog,
@@ -93,7 +94,7 @@ const ROLE_COLUMNS: ColumnDef<CustomRole>[] = [
                 {r.permissions.slice(0, 2).map((p) => (
                     <span
                         key={p}
-                        className="inline-block px-2 py-0.5 text-xs bg-muted rounded font-mono"
+                        className="inline-block px-2 py-0.5 text-xs bg-muted rounded"
                     >
                         {p}
                     </span>
@@ -273,11 +274,14 @@ export default function CustomRolesPage() {
             {/* View modal */}
             <RoleViewModal role={viewRole} onClose={() => setViewRole(null)} />
 
-            {/* Delete dialog */}
-            <DeleteRoleDialog
-                role={deleteRole}
+            {/* Delete dialog using common component */}
+            <ConfirmationModal
+                open={!!deleteRole}
+                onClose={() => setDeleteRole(null)}
                 onConfirm={handleDelete}
-                onCancel={() => setDeleteRole(null)}
+                title={ROLE_MESSAGES.DELETE_CONFIRM_TITLE}
+                message={deleteRole ? ROLE_MESSAGES.DELETE_CONFIRM_DESC(deleteRole.roleName) : ""}
+                confirmText="Delete Role"
             />
         </div>
     );
@@ -325,7 +329,7 @@ function RoleViewModal({
                                         <p className="text-sm font-medium text-foreground">
                                             {emp.fullName}
                                         </p>
-                                        <p className="text-xs text-muted-foreground font-mono">
+                                        <p className="text-xs text-muted-foreground">
                                             {emp.empId}
                                         </p>
                                     </div>

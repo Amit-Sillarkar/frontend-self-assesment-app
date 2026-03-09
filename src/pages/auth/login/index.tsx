@@ -39,7 +39,7 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary mb-4">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-averia font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl   font-bold tracking-tight text-foreground">
             {APP_NAME}
           </h1>
           <p className="text-muted-foreground mt-2">{APP_DESCRIPTION}</p>

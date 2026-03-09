@@ -257,7 +257,7 @@ export default function ComponentsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-averia font-bold text-foreground">Components</h2>
+        <h2 className="text-2xl   font-bold text-foreground">Components</h2>
         <p className="text-muted-foreground mt-1 text-sm">
           Click any component card to see the full interactive preview.
         </p>
@@ -308,7 +308,7 @@ export default function ComponentsPage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between p-5 border-b border-border">
               <div>
-                <h3 className="font-averia font-bold text-lg text-foreground">
+                <h3 className="  font-bold text-lg text-foreground">
                   {activeComponent.label}
                 </h3>
                 <p className="text-sm text-muted-foreground">{activeComponent.description}</p>
