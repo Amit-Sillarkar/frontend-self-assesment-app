@@ -32,7 +32,7 @@ export default function Header({ title, subtitle, onMenuToggle }: HeaderProps) {
 
         {/* Page title — truncates on very small screens */}
         <div className="min-w-0">
-          <h1 className="text-base md:text-xl font-averia font-bold text-foreground leading-tight truncate">
+          <h1 className="text-base md:text-xl   font-bold text-foreground leading-tight truncate">
             {title}
           </h1>
           {subtitle && (

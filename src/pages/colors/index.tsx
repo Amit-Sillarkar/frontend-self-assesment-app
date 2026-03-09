@@ -50,7 +50,7 @@ export default function ColorsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-averia font-bold text-foreground">Color Palette</h2>
+        <h2 className="text-2xl   font-bold text-foreground">Color Palette</h2>
         <p className="text-muted-foreground mt-1 text-sm">
           All theme color tokens defined in <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">index.css</code>. Use these Tailwind classes across the project.
         </p>

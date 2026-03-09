@@ -22,11 +22,11 @@ import SearchFilterBar from "@/components/search-filter-bar";
 import RoleBadge from "@/components/role-badge";
 import { usePagination } from "@/components/table-pagination";
 import { useToast } from "@/components/toast-notification";
+import { ConfirmationModal } from "@/components/common/confirmation-modal";
 import type { ColumnDef, RowAction } from "@/types/table";
 
 import UserViewModal from "./components/user-view-modal";
 import UserFormModal from "./components/user-form-modal";
-import DeleteUserDialog from "./components/delete-user-dialog";
 
 import type { User, UserFormData } from "./types";
 import { MOCK_USERS } from "@/mockdata/users";
@@ -52,7 +52,7 @@ const USER_COLUMNS: ColumnDef<User>[] = [
     header: "Emp ID",
     width: "w-28",
     render: (u) => (
-      <span className="font-mono text-xs font-bold text-foreground">
+      <span className="text-xs font-bold text-foreground">
         {u.empId}
       </span>
     ),
@@ -76,7 +76,7 @@ const USER_COLUMNS: ColumnDef<User>[] = [
     header: "Mobile",
     hideBelow: "lg",
     render: (u) => (
-      <span className="font-mono text-xs text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         {u.mobile}
       </span>
     ),
@@ -268,10 +268,13 @@ export default function UserManagementPage() {
         }}
         onSubmit={isAddOpen ? handleSaveAdd : handleSaveEdit}
       />
-      <DeleteUserDialog
-        user={deleteUser}
+      <ConfirmationModal
+        open={!!deleteUser}
+        onClose={() => setDeleteUser(null)}
         onConfirm={handleDelete}
-        onCancel={() => setDeleteUser(null)}
+        title={USER_MESSAGES.DELETE_CONFIRM_TITLE}
+        message={deleteUser ? USER_MESSAGES.DELETE_CONFIRM_DESC(deleteUser.fullName) : ""}
+        confirmText="Delete User"
       />
     </div>
   );

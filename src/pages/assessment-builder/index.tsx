@@ -3,16 +3,14 @@ import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Users, FileQuestion, GitMerge, Search, Filter, MoreVertical, Eye, Edit, Trash } from "lucide-react";
+import { Plus, Users, FileQuestion, GitMerge, MoreVertical, Eye, Edit, Trash } from "lucide-react";
 import { initialAssessments } from "@/mockdata/assessments";
 import { type Assessment } from "./types";
 import { CreateAssessmentDialog } from "./components/create-assessment-dialog";
 import { ViewAssessmentDialog } from "./components/view-assessment-dialog";
 
-// Import our new cleanly built Custom Component
+import SearchFilterBar from "@/components/search-filter-bar";
 import { ConfirmationModal } from "@/components/common/confirmation-modal";
 
 const formatDesignation = (id: string) => {
@@ -54,7 +52,6 @@ export default function AssessmentBuilderPage() {
     setIsDeleteModalOpen(true);
   };
 
-  
   const handleConfirmDelete = () => {
     if (assessmentToDelete) {
       setAssessments(prev => prev.filter(a => a.id !== assessmentToDelete));
@@ -90,32 +87,27 @@ export default function AssessmentBuilderPage() {
       </div>
 
       {/* SEARCH AND FILTERS */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-muted/20 p-4 rounded-lg border border-border/50">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search assessments..." 
-            className="pl-9 w-full bg-background" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="w-full sm:w-[250px] flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-          <Select value={designationFilter} onValueChange={setDesignationFilter}>
-            <SelectTrigger className="bg-background">
-              <SelectValue placeholder="Filter Designation" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Designations</SelectItem>
-              <SelectItem value="frontend_dev">Frontend Developer</SelectItem>
-              <SelectItem value="backend_dev">Backend Developer</SelectItem>
-              <SelectItem value="fullstack_dev">Full Stack Developer</SelectItem>
-              <SelectItem value="ui_ux">UI/UX Designer</SelectItem>
-              <SelectItem value="project_manager">Project Manager</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm">
+        <SearchFilterBar
+          search={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search assessments..."
+          filters={[
+            {
+              value: designationFilter,
+              onChange: setDesignationFilter,
+              placeholder: "Filter Designation",
+              options: [
+                { value: "all", label: "All Designations" },
+                { value: "frontend_dev", label: "Frontend Developer" },
+                { value: "backend_dev", label: "Backend Developer" },
+                { value: "fullstack_dev", label: "Full Stack Developer" },
+                { value: "ui_ux", label: "UI/UX Designer" },
+                { value: "project_manager", label: "Project Manager" },
+              ],
+            },
+          ]}
+        />
       </div>
 
       {/* ASSESSMENT CARDS */}
@@ -186,7 +178,6 @@ export default function AssessmentBuilderPage() {
         initialData={editingAssessment}
       />
 
-      {/* USING THE NEW CUSTOM COMMON COMPONENT HERE */}
       <ConfirmationModal
         open={isDeleteModalOpen}
         onClose={handleCancelDelete}
