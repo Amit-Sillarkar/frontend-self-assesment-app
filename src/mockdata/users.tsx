@@ -85,6 +85,20 @@ export const MOCK_USERS: User[] = [
     reportingManager: "Kiran Mehta",
     roleLockStatus: "not_locked",
   },
+   {
+    id: "3",
+    empId: "SUP001",
+    fullName: "Rahul Patil",
+    mobile: "9800000003",
+    email: "rahul.patil@kdaher.com",
+    primaryRole: "supervisor",
+    customRole: null,
+    designation: "Site Supervisor",
+    reportingSupervisor: null,
+    reportingManager: "Priya Desai",
+    roleLockStatus: "locked",
+
+  },
 ];
 
 // Used for employee search in Custom Role wizard Step 2

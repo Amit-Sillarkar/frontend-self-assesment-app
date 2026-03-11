@@ -1,9 +1,5 @@
-// ─────────────────────────────────────────────
-// FILE: src/pages/user-management/index.tsx
-// With pagination, toasts, polished layout
-// ─────────────────────────────────────────────
-
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom"; 
 import {
   EyeIcon,
   PencilIcon,
@@ -33,39 +29,24 @@ import { MOCK_USERS } from "@/mockdata/users";
 import { PRIMARY_ROLE_OPTIONS } from "@/constants/enum";
 import { USER_MESSAGES } from "@/constants/messages";
 
-const EMPTY_FORM: UserFormData = {
-  empId: "",
-  fullName: "",
-  mobile: "",
-  email: "",
-  primaryRole: "user_labor",
-  customRole: null,
-  designation: "",
-  reportingSupervisor: null,
-  reportingManager: null,
-  roleLockStatus: "not_locked",
-};
-
 const USER_COLUMNS: ColumnDef<User>[] = [
   {
     key: "empId",
     header: "Emp ID",
     width: "w-28",
     render: (u) => (
-      <span className="text-xs font-bold text-foreground">
-        {u.empId}
-      </span>
+      <span className="text-xs font-bold text-foreground">{u.empId}</span>
     ),
   },
   {
     key: "fullName",
     header: "Name",
     render: (u) => (
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+      <div className="flex items-center gap-2.5 group">
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
           <UserIcon className="w-4 h-4 text-primary" />
         </div>
-        <span className="font-medium text-foreground text-sm">
+        <span className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
           {u.fullName}
         </span>
       </div>
@@ -76,9 +57,7 @@ const USER_COLUMNS: ColumnDef<User>[] = [
     header: "Mobile",
     hideBelow: "lg",
     render: (u) => (
-      <span className="text-xs text-muted-foreground">
-        {u.mobile}
-      </span>
+      <span className="text-xs text-muted-foreground">{u.mobile}</span>
     ),
   },
   {
@@ -98,17 +77,30 @@ const USER_COLUMNS: ColumnDef<User>[] = [
 
 export default function UserManagementPage() {
   const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams(); // URL state
+
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [viewUser, setViewUser] = useState<User | null>(null);
-  const [editUser, setEditUser] = useState<User | null>(null);
-  const [deleteUser, setDeleteUser] = useState<User | null>(null);
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [form, setForm] = useState<UserFormData>(EMPTY_FORM);
-  const [formErrors, setFormErrors] = useState<
-    Partial<Record<keyof User, string>>
-  >({});
+
+  // Derive modal states from URL
+  const isAddOpen = searchParams.get("addUser") === "true";
+  const editUserId = searchParams.get("editUser");
+  const viewUserId = searchParams.get("viewUser");
+  const deleteUserId = searchParams.get("deleteUser");
+
+  const editUser = useMemo(
+    () => users.find((u) => u.id === editUserId) || null,
+    [users, editUserId],
+  );
+  const viewUser = useMemo(
+    () => users.find((u) => u.id === viewUserId) || null,
+    [users, viewUserId],
+  );
+  const deleteUser = useMemo(
+    () => users.find((u) => u.id === deleteUserId) || null,
+    [users, deleteUserId],
+  );
 
   const filteredUsers = useMemo(() => {
     const q = search.toLowerCase();
@@ -126,52 +118,42 @@ export default function UserManagementPage() {
 
   const { paginated, PaginationBar } = usePagination(filteredUsers);
 
-  function openAdd() {
-    setForm(EMPTY_FORM);
-    setFormErrors({});
-    setIsAddOpen(true);
-  }
-  function openEdit(user: User) {
-    setForm({ ...user });
-    setFormErrors({});
-    setEditUser(user);
-  }
+  // ── URL Updaters ──────────────────────────────────
+  const clearModals = () => {
+    searchParams.delete("addUser");
+    searchParams.delete("editUser");
+    searchParams.delete("viewUser");
+    searchParams.delete("deleteUser");
+    setSearchParams(searchParams);
+  };
 
-  function validate(): boolean {
-    const e: Partial<Record<keyof User, string>> = {};
-    if (!form.empId.trim()) e.empId = "Employee ID is required.";
-    if (!form.fullName.trim()) e.fullName = "Full name is required.";
-    if (!form.mobile.trim()) e.mobile = "Mobile number is required.";
-    if (!form.email.trim()) e.email = "Email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      e.email = "Enter a valid email.";
-    if (!form.designation.trim()) e.designation = "Designation is required.";
-    setFormErrors(e);
-    return Object.keys(e).length === 0;
-  }
+  const openAdd = () => {
+    searchParams.set("addUser", "true");
+    setSearchParams(searchParams);
+  };
 
-  function handleSaveAdd() {
-    if (!validate()) return;
-    setUsers((prev) => [...prev, { ...form, id: Date.now().toString() }]);
-    setIsAddOpen(false);
+  // ── Handlers ──────────────────────────────────────
+  function handleSaveAdd(data: UserFormData) {
+    setUsers((prev) => [...prev, { ...data, id: Date.now().toString() }]);
+    clearModals();
     toast.success(USER_MESSAGES.CREATE_SUCCESS);
   }
 
-  function handleSaveEdit() {
-    if (!validate() || !editUser) return;
+  function handleSaveEdit(data: UserFormData) {
+    if (!editUser) return;
     setUsers((prev) =>
       prev.map((u) =>
-        u.id === editUser.id ? { ...form, id: editUser.id } : u,
+        u.id === editUser.id ? { ...data, id: editUser.id } : u,
       ),
     );
-    setEditUser(null);
+    clearModals();
     toast.success(USER_MESSAGES.UPDATE_SUCCESS);
   }
 
   function handleDelete() {
     if (!deleteUser) return;
     setUsers((prev) => prev.filter((u) => u.id !== deleteUser.id));
-    setDeleteUser(null);
+    clearModals();
     toast.deleted(USER_MESSAGES.DELETE_SUCCESS);
   }
 
@@ -179,23 +161,32 @@ export default function UserManagementPage() {
     {
       icon: <EyeIcon className="w-4 h-4" />,
       label: "View",
-      onClick: setViewUser,
+      onClick: (u) => {
+        searchParams.set("viewUser", u.id);
+        setSearchParams(searchParams);
+      },
     },
     {
       icon: <PencilIcon className="w-4 h-4" />,
       label: "Edit",
-      onClick: openEdit,
+      onClick: (u) => {
+        searchParams.set("editUser", u.id);
+        setSearchParams(searchParams);
+      },
     },
     {
       icon: <Trash2Icon className="w-4 h-4" />,
       label: "Delete",
-      onClick: setDeleteUser,
+      onClick: (u) => {
+        searchParams.set("deleteUser", u.id);
+        setSearchParams(searchParams);
+      },
       danger: true,
     },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <PageHeader
         title="User Management"
         subtitle="Manage system users, roles, and permissions"
@@ -204,9 +195,7 @@ export default function UserManagementPage() {
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => {
-            toast.info(USER_MESSAGES.SYNC_SUCCESS);
-          }}
+          onClick={() => toast.info(USER_MESSAGES.SYNC_SUCCESS)}
         >
           <RefreshCwIcon className="w-4 h-4" /> True-in Sync
         </Button>
@@ -218,7 +207,11 @@ export default function UserManagementPage() {
         >
           <UploadIcon className="w-4 h-4" /> Import Data
         </Button>
-        <Button size="sm" className="gap-2" onClick={openAdd}>
+        <Button
+          size="sm"
+          className="gap-2 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
+          onClick={openAdd}
+        >
           <PlusIcon className="w-4 h-4" /> Add User
         </Button>
       </PageHeader>
@@ -255,25 +248,29 @@ export default function UserManagementPage() {
         <PaginationBar />
       </TableCard>
 
-      <UserViewModal user={viewUser} onClose={() => setViewUser(null)} />
+      {/* View Modal */}
+      <UserViewModal user={viewUser} onClose={clearModals} />
+
+      {/* Self-contained Form Modal mapping to Add or Edit */}
       <UserFormModal
         open={isAddOpen || !!editUser}
         mode={isAddOpen ? "add" : "edit"}
-        form={form}
-        errors={formErrors}
-        onChange={(f, v) => setForm((p) => ({ ...p, [f]: v }))}
-        onClose={() => {
-          setIsAddOpen(false);
-          setEditUser(null);
-        }}
+        initialData={editUser}
+        onClose={clearModals}
         onSubmit={isAddOpen ? handleSaveAdd : handleSaveEdit}
       />
+
+      {/* Delete Confirmation Modal */}
       <ConfirmationModal
         open={!!deleteUser}
-        onClose={() => setDeleteUser(null)}
+        onClose={clearModals}
         onConfirm={handleDelete}
         title={USER_MESSAGES.DELETE_CONFIRM_TITLE}
-        message={deleteUser ? USER_MESSAGES.DELETE_CONFIRM_DESC(deleteUser.fullName) : ""}
+        message={
+          deleteUser
+            ? USER_MESSAGES.DELETE_CONFIRM_DESC(deleteUser.fullName)
+            : ""
+        }
         confirmText="Delete User"
       />
     </div>

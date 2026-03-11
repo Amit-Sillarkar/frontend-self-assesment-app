@@ -1,160 +1,102 @@
-// ─────────────────────────────────────────────
-// FILE: src/pages/custom-roles/components/step2-select-employees.tsx
-//
-// Wizard Step 2: Multi-select searchable employee list.
-// Shows employee name, ID, and their default role.
-// Excludes super_admin employees by spec.
-// ─────────────────────────────────────────────
-
-import { useState } from "react";
-import { SearchIcon, CheckIcon, XIcon, UserIcon } from "lucide-react";
+import { useState, useMemo } from "react";
+import { SearchIcon, UsersIcon, CheckCircle2Icon, UserCircleIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import RoleBadge from "@/components/role-badge";
-import { ASSIGNABLE_EMPLOYEES } from "@/mockdata/users";
-import type { PrimaryRole } from "@/constants/enum";
-
-interface EmployeeOption {
-  id: string;
-  empId: string;
-  fullName: string;
-  primaryRole: PrimaryRole;
-  customRole: string | null;
-}
+// Make sure this path points to your actual users/employees mock data
+import { MOCK_USERS } from "@/mockdata/users"; 
 
 interface Props {
-  selected: string[]; // array of employee ids
+  selected: string[];
   onChange: (ids: string[]) => void;
   error: string;
 }
 
-export default function Step2SelectEmployees({
-  selected,
-  onChange,
-  error,
-}: Props) {
+export default function Step2SelectEmployees({ selected, onChange, error }: Props) {
   const [search, setSearch] = useState("");
 
-  const filtered = ASSIGNABLE_EMPLOYEES.filter((e) => {
-    const q = search.toLowerCase();
-    return (
-      !q ||
-      e.fullName.toLowerCase().includes(q) ||
-      e.empId.toLowerCase().includes(q)
+  const filtered = useMemo(() => {
+    return MOCK_USERS.filter(u => 
+        u.fullName.toLowerCase().includes(search.toLowerCase()) || 
+        u.empId.toLowerCase().includes(search.toLowerCase())
     );
-  });
+  }, [search]);
 
-  function toggle(id: string) {
-    onChange(
-      selected.includes(id)
-        ? selected.filter((s) => s !== id)
-        : [...selected, id],
-    );
+  const toggle = (id: string) => {
+    if (selected.includes(id)) onChange(selected.filter((x) => x !== id));
+    else onChange([...selected, id]);
+  };
+
+  const toggleAll = () => {
+    if (selected.length === filtered.length && filtered.length > 0) onChange([]);
+    else onChange(filtered.map(f => f.id));
   }
 
-  const selectedEmployees = (ASSIGNABLE_EMPLOYEES as EmployeeOption[]).filter(
-    (e) => selected.includes(e.id),
-  );
-
   return (
-    <div className="space-y-4">
-      {/* Selected chips */}
-      {selectedEmployees.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {selectedEmployees.map((e) => (
-            <span
-              key={e.id}
-              className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full border border-primary/20"
-            >
-              {e.fullName}
-              <button
-                onClick={() => toggle(e.id)}
-                className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-primary/20 transition-colors"
-              >
-                <XIcon className="w-2.5 h-2.5" />
-              </button>
+    <div className="flex flex-col h-full space-y-4 animate-in fade-in duration-300 min-h-0">
+      
+      {/* Fixed Header & Search */}
+      <div className="shrink-0 space-y-3">
+        <div className="flex items-center justify-between">
+            <div>
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <UsersIcon className="w-4 h-4 text-primary" /> Select Employees
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Choose who will be assigned this role.</p>
+                {error && <p className="text-xs text-destructive mt-1 font-medium">{error}</p>}
+            </div>
+            <span className="text-[10px] font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full uppercase tracking-wider">
+                {selected.length} Selected
             </span>
-          ))}
         </div>
-      )}
-
-      {/* Search */}
-      <div className="relative">
-        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by name or employee ID..."
-          className="pl-9 h-9 text-sm"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        
+        <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)} 
+                placeholder="Search by name or ID..." 
+                className="pl-9 h-9 text-xs focus-visible:ring-primary/50" 
+            />
+        </div>
       </div>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {/* Internal Scrollable Employee List */}
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar border border-border/60 rounded-xl bg-card shadow-sm divide-y divide-border/40">
+        
+        <button onClick={toggleAll} className="w-full flex items-center justify-between p-3 bg-muted/30 hover:bg-muted/60 transition-colors text-left">
+            <span className="text-xs font-bold text-foreground">Select All Filtered</span>
+            <div className={`w-4 h-4 rounded-full flex items-center justify-center border-2 transition-colors ${selected.length === filtered.length && filtered.length > 0 ? "bg-primary border-primary" : "border-border"}`}>
+                {selected.length === filtered.length && filtered.length > 0 && <CheckCircle2Icon className="w-3 h-3 text-primary-foreground" />}
+            </div>
+        </button>
 
-      {/* Employee list */}
-      <div className="border border-border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
         {filtered.length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">
-            No employees found
-          </div>
+            <div className="py-8 text-center text-xs text-muted-foreground">No employees found matching your search.</div>
         ) : (
-          filtered.map((emp) => {
-            const isSelected = selected.includes(emp.id);
-            return (
-              <button
-                key={emp.id}
-                onClick={() => toggle(emp.id)}
-                className={[
-                  "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors border-b border-border last:border-0",
-                  isSelected
-                    ? "bg-primary/5 hover:bg-primary/10"
-                    : "hover:bg-muted/40",
-                ].join(" ")}
-              >
-                {/* Checkbox indicator */}
-                <div
-                  className={[
-                    "w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors",
-                    isSelected ? "bg-primary border-primary" : "border-border",
-                  ].join(" ")}
-                >
-                  {isSelected && <CheckIcon className="w-3 h-3 text-white" />}
-                </div>
-
-                {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                  <UserIcon className="w-4 h-4 text-primary" />
-                </div>
-
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {emp.fullName}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    {emp.empId}
-                  </p>
-                </div>
-
-                {/* Role */}
-                <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                  <RoleBadge role={emp.primaryRole} />
-                  {emp.customRole && (
-                    <span className="text-xs text-muted-foreground">
-                      {emp.customRole}
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })
+            filtered.map((emp) => {
+                const isChecked = selected.includes(emp.id);
+                return (
+                    <button
+                        key={emp.id}
+                        onClick={() => toggle(emp.id)}
+                        className={`w-full flex items-center justify-between p-3 transition-colors text-left ${isChecked ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/40"}`}
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-6 h-6 rounded-full bg-background border border-border flex items-center justify-center">
+                                <UserCircleIcon className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                            <div>
+                                <p className={`text-xs font-semibold ${isChecked ? "text-foreground" : "text-muted-foreground"}`}>{emp.fullName}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono">{emp.empId}</p>
+                            </div>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center border-2 transition-colors ${isChecked ? "bg-primary border-primary shadow-sm" : "border-border"}`}>
+                            {isChecked && <CheckCircle2Icon className="w-3 h-3 text-primary-foreground" />}
+                        </div>
+                    </button>
+                );
+            })
         )}
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        {selected.length === 0
-          ? "Select one or more employees to assign this role"
-          : `${selected.length} employee${selected.length > 1 ? "s" : ""} selected`}
-      </p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronRightIcon, ChevronLeftIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronRightIcon, ChevronLeftIcon, ShieldPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,57 +18,52 @@ import type { PermissionKey } from "@/constants/enum";
 import { ROLE_MESSAGES } from "@/constants/messages";
 import type { CustomRoleFormData } from "../types";
 
-// ── Empty form ───────────────────────────────
-
 const EMPTY: CustomRoleFormData = {
   roleName: "",
   assignedEmployeeIds: [],
   permissions: [],
 };
 
-// ── Props ────────────────────────────────────
-
 interface Props {
   open: boolean;
-  existingRoleNames: string[]; // for uniqueness check
+  existingRoleNames: string[];
   onClose: () => void;
   onSubmit: (data: CustomRoleFormData) => void;
 }
 
-// ── Component ────────────────────────────────
-
-export default function CreateRoleWizard({
-  open,
-  existingRoleNames,
-  onClose,
-  onSubmit,
-}: Props) {
+export default function CreateRoleWizard({ open, existingRoleNames, onClose, onSubmit }: Props) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<CustomRoleFormData>(EMPTY);
   const [errors, setErrors] = useState({ step1: "", step2: "", step3: "" });
 
-  function resetAndClose() {
-    setStep(1);
-    setForm(EMPTY);
-    setErrors({ step1: "", step2: "", step3: "" });
-    onClose();
-  }
+  useEffect(() => {
+      if (open) {
+          const savedDraft = localStorage.getItem("draft_create_custom_role");
+          if (savedDraft) {
+              const parsed = JSON.parse(savedDraft);
+              setForm(parsed.form);
+              setStep(parsed.step || 1);
+          } else {
+              setForm(EMPTY);
+              setStep(1);
+          }
+          setErrors({ step1: "", step2: "", step3: "" });
+      }
+  }, [open]);
 
-  // ── Step validation ────────────────────────
+  useEffect(() => {
+      if (open && (form.roleName || form.assignedEmployeeIds.length > 0 || form.permissions.length > 0)) {
+          localStorage.setItem("draft_create_custom_role", JSON.stringify({ form, step }));
+      }
+  }, [form, step, open]);
 
   function validateStep1(): boolean {
     if (!form.roleName.trim()) {
       setErrors((e) => ({ ...e, step1: ROLE_MESSAGES.STEP1_INCOMPLETE }));
       return false;
     }
-    const isDuplicate = existingRoleNames
-      .map((n) => n.toLowerCase())
-      .includes(form.roleName.trim().toLowerCase());
-    if (isDuplicate) {
-      setErrors((e) => ({
-        ...e,
-        step1: ROLE_MESSAGES.ROLE_EXISTS(form.roleName.trim()),
-      }));
+    if (existingRoleNames.map((n) => n.toLowerCase()).includes(form.roleName.trim().toLowerCase())) {
+      setErrors((e) => ({ ...e, step1: ROLE_MESSAGES.ROLE_EXISTS(form.roleName.trim()) }));
       return false;
     }
     setErrors((e) => ({ ...e, step1: "" }));
@@ -93,8 +88,6 @@ export default function CreateRoleWizard({
     return true;
   }
 
-  // ── Navigation ─────────────────────────────
-
   function handleNext() {
     if (step === 1 && validateStep1()) setStep(2);
     if (step === 2 && validateStep2()) setStep(3);
@@ -107,104 +100,58 @@ export default function CreateRoleWizard({
   function handleAssign() {
     if (validateStep1() && validateStep2() && validateStep3()) {
       onSubmit(form);
-      resetAndClose();
+      localStorage.removeItem("draft_create_custom_role");
     }
   }
 
-  // ── Step label map ─────────────────────────
-
-  const STEP_LABELS: Record<number, string> = {
-    1: "Define Role",
-    2: "Select Employees",
-    3: "Set Permissions",
-  };
+  const STEP_LABELS: Record<number, string> = { 1: "Define Role", 2: "Select Employees", 3: "Set Permissions" };
 
   return (
-    <Dialog open={open} onOpenChange={resetAndClose}>
-      <DialogContent className="sm:max-w-[650px] w-[95vw] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4 border-b">
-          <div className="flex flex-col gap-1">
-            <DialogTitle className="text-xl font-semibold tracking-tight">
-              Create Custom Role
-            </DialogTitle>
-
-            <p className="text-xs text-primary uppercase tracking-wide">
-              3-Step Setup Wizard
-            </p>
-
-            <DialogDescription className="text-sm text-muted-foreground max-w-md">
-              Define a role, assign employees, and configure permissions in
-              three quick steps.
-            </DialogDescription>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      {/* Locked height to h-[85vh] to force inner scrolling */}
+      <DialogContent className="sm:max-w-[650px] w-[95vw] h-[85vh] flex flex-col p-0 overflow-hidden bg-background border-border/60 shadow-xl">
+        
+        {/* ── Fixed Header ── */}
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border bg-card relative overflow-hidden shrink-0">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary/40" />
+          <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 shadow-sm border border-primary/10">
+                  <ShieldPlusIcon className="w-5 h-5 text-primary" />
+              </div>
+              <div className="text-left space-y-0.5">
+                  <DialogTitle className="text-lg font-bold text-foreground">Create Custom Role</DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">Define a role, assign employees, and configure permissions.</DialogDescription>
+              </div>
           </div>
         </DialogHeader>
 
-        {/* Stepper */}
-        <div className="py-2 flex justify-center w-full">
+        {/* ── Fixed Stepper ── */}
+        <div className="px-5 pt-5 pb-2 shrink-0 flex justify-center w-full bg-background">
           <div className="w-full max-w-md">
             <WizardStepper currentStep={step} />
           </div>
         </div>
 
-        {/* Step content */}
-        <div className="min-h-70">
-          {step === 1 && (
-            <Step1DefineRole
-              roleName={form.roleName}
-              onChange={(v) => setForm((f) => ({ ...f, roleName: v }))}
-              error={errors.step1}
-            />
-          )}
-          {step === 2 && (
-            <Step2SelectEmployees
-              selected={form.assignedEmployeeIds}
-              onChange={(ids) =>
-                setForm((f) => ({ ...f, assignedEmployeeIds: ids }))
-              }
-              error={errors.step2}
-            />
-          )}
-          {step === 3 && (
-            <Step3SetPermissions
-              selected={form.permissions as PermissionKey[]}
-              onChange={(perms) =>
-                setForm((f) => ({ ...f, permissions: perms }))
-              }
-              error={errors.step3}
-            />
-          )}
+        {/* ── Dynamic Step Content Area (Handles inner scroll) ── */}
+        <div className="flex-1 min-h-0 px-5 pb-5 flex flex-col">
+          {step === 1 && <Step1DefineRole roleName={form.roleName} onChange={(v) => setForm((f) => ({ ...f, roleName: v }))} error={errors.step1} />}
+          {step === 2 && <Step2SelectEmployees selected={form.assignedEmployeeIds} onChange={(ids) => setForm((f) => ({ ...f, assignedEmployeeIds: ids }))} error={errors.step2} />}
+          {step === 3 && <Step3SetPermissions selected={form.permissions as PermissionKey[]} onChange={(perms) => setForm((f) => ({ ...f, permissions: perms }))} error={errors.step3} />}
         </div>
 
-        {/* Footer navigation */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          <Button
-            variant="outline"
-            onClick={step === 1 ? resetAndClose : handleBack}
-          >
-            {step === 1 ? (
-              "Cancel"
-            ) : (
-              <span className="flex items-center gap-1">
-                <ChevronLeftIcon className="w-4 h-4" /> Back
-              </span>
-            )}
+        {/* ── Fixed Footer ── */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-card shrink-0">
+          <Button variant="outline" size="sm" onClick={step === 1 ? onClose : handleBack} className="h-8 border-border text-xs text-foreground hover:bg-muted shadow-sm transition-all">
+            {step === 1 ? "Cancel" : <span className="flex items-center gap-1"><ChevronLeftIcon className="w-3.5 h-3.5" /> Back</span>}
           </Button>
-
-          <div className="flex items-center gap-2">
-            {/* Step counter */}
-            <span className="text-xs text-muted-foreground">
-              Step {step} of 3 — {STEP_LABELS[step]}
-            </span>
-
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:inline-block">Step {step} of 3 — {STEP_LABELS[step]}</span>
             {step < 3 ? (
-              <Button onClick={handleNext} className="gap-1">
-                Next <ChevronRightIcon className="w-4 h-4" />
+              <Button size="sm" onClick={handleNext} className="h-8 gap-1 text-xs bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all">
+                Next <ChevronRightIcon className="w-3.5 h-3.5" />
               </Button>
             ) : (
-              <Button
-                onClick={handleAssign}
-                disabled={form.permissions.length === 0}
-              >
+              <Button size="sm" onClick={handleAssign} disabled={form.permissions.length === 0} className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all">
                 Assign Role
               </Button>
             )}

@@ -73,7 +73,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
 
       {/* ── Toast stack ── */}
-      <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}
@@ -133,7 +133,7 @@ function ToastItem({
         "pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg border border-border min-w-70 max-w-sm",
         style.bg,
         style.border,
-        "animate-in slide-in-from-bottom-4 duration-300",
+        "animate-in slide-in-from-top-4 duration-300",
       ].join(" ")}
     >
       <span className={`mt-0.5 shrink-0 ${style.iconColor}`}>{style.icon}</span>

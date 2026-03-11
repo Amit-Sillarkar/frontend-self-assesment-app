@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
     PlusIcon,
     EyeIcon,
@@ -6,9 +7,10 @@ import {
     ShieldIcon,
     UsersIcon,
     CalendarIcon,
+    PencilIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-// Common components
+
 import PageHeader from "@/components/page-header";
 import TableCard from "@/components/table-card";
 import DataTable from "@/components/data-table";
@@ -16,34 +18,16 @@ import SearchFilterBar from "@/components/search-filter-bar";
 import { ConfirmationModal } from "@/components/common/confirmation-modal";
 import type { ColumnDef, RowAction } from "@/types/table";
 
-// Page components
-import CreateRoleWizard from "./components/create-role-wizard";
+// Import useToast hook
+import { useToast } from "@/components/toast-notification";
 
-// Data & types
+import CreateRoleWizard from "./components/create-role-wizard";
+import RoleViewModal from "./components/role-view-modal";
+import EditRoleModal from "./components/edit-role-modal";
+
 import { MOCK_CUSTOM_ROLES } from "@/mockdata/custom-roles";
 import type { CustomRole, CustomRoleFormData } from "./types";
-import { PERMISSION_GROUPS } from "@/constants/enum";
 import { ROLE_MESSAGES } from "@/constants/messages";
-import { ASSIGNABLE_EMPLOYEES } from "@/mockdata/users";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog";
-import RoleBadge from "@/components/role-badge";
-
-// ── Helpers ───────────────────────────────────
-
-function permissionLabel(key: string): string {
-    for (const group of Object.values(PERMISSION_GROUPS)) {
-        const found = group.permissions.find((p) => p.key === key);
-        if (found) return found.label;
-    }
-    return key;
-}
 
 function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("en-IN", {
@@ -53,112 +37,174 @@ function formatDate(iso: string) {
     });
 }
 
-// ── Column definitions ─────────────────────────
-
-const ROLE_COLUMNS: ColumnDef<CustomRole>[] = [
-    {
-        key: "roleName",
-        header: "Role Name",
-        render: (r) => (
-            <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <ShieldIcon className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <span className="font-semibold text-sm text-foreground">
-                    {r.roleName}
-                </span>
-            </div>
-        ),
-    },
-    {
-        key: "assignedEmployees",
-        header: "Assigned Employees",
-        render: (r) => (
-            <div className="flex items-center gap-1.5">
-                <UsersIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-sm text-foreground font-medium">
-                    {r.assignedEmployees.length}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                    {r.assignedEmployees.length === 1 ? "employee" : "employees"}
-                </span>
-            </div>
-        ),
-    },
-    {
-        key: "permissions",
-        header: "Permissions",
-        hideBelow: "lg",
-        render: (r) => (
-            <div className="flex flex-wrap gap-1 max-w-xs">
-                {r.permissions.slice(0, 2).map((p) => (
-                    <span
-                        key={p}
-                        className="inline-block px-2 py-0.5 text-xs bg-muted rounded"
-                    >
-                        {p}
-                    </span>
-                ))}
-                {r.permissions.length > 2 && (
-                    <span className="inline-block px-2 py-0.5 text-xs bg-muted rounded text-muted-foreground">
-                        +{r.permissions.length - 2} more
-                    </span>
-                )}
-            </div>
-        ),
-    },
-    {
-        key: "createdAt",
-        header: "Created",
-        hideBelow: "md",
-        render: (r) => (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <CalendarIcon className="w-3.5 h-3.5" />
-                {formatDate(r.createdAt)}
-            </div>
-        ),
-    },
-    {
-        key: "createdBy",
-        header: "Created By",
-        hideBelow: "lg",
-        render: (r) => (
-            <span className="text-xs text-muted-foreground">{r.createdBy}</span>
-        ),
-    },
-];
-
-// ── Page ─────────────────────────────────────
-
 export default function CustomRolesPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Initialize toaster
+    const toast = useToast();
+
     const [roles, setRoles] = useState<CustomRole[]>(MOCK_CUSTOM_ROLES);
     const [search, setSearch] = useState("");
     const [dateFilter, setDateFilter] = useState("all");
-    const [viewRole, setViewRole] = useState<CustomRole | null>(null);
-    const [deleteRole, setDeleteRole] = useState<CustomRole | null>(null);
-    const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-    // ── Filtering ──────────────────────────────
+    // ── URL Driven Modal States ──
+    const isCreateOpen = searchParams.get("createRole") === "true";
+    const editRoleId = searchParams.get("editRole");
+    const viewRoleId = searchParams.get("viewRole");
+    const deleteRoleId = searchParams.get("deleteRole");
 
+    const editRoleData = useMemo(
+        () => (editRoleId ? roles.find((r) => r.id === editRoleId) || null : null),
+        [editRoleId, roles],
+    );
+    const viewRoleData = useMemo(
+        () => (viewRoleId ? roles.find((r) => r.id === viewRoleId) || null : null),
+        [viewRoleId, roles],
+    );
+    const deleteRoleData = useMemo(
+        () =>
+            deleteRoleId ? roles.find((r) => r.id === deleteRoleId) || null : null,
+        [deleteRoleId, roles],
+    );
+
+    // ── URL Clear Helper ──
+    const clearModals = () => {
+        searchParams.delete("createRole");
+        searchParams.delete("editRole");
+        searchParams.delete("viewRole");
+        searchParams.delete("deleteRole");
+        setSearchParams(searchParams);
+    };
+
+    // ── Columns ──
+    const ROLE_COLUMNS: ColumnDef<CustomRole>[] = [
+        {
+            key: "roleName",
+            header: "Role Name",
+            render: (r) => (
+                <div
+                    className="flex items-center gap-3 group cursor-pointer"
+                    onClick={() => {
+                        searchParams.set("viewRole", r.id);
+                        setSearchParams(searchParams);
+                    }}
+                >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary/20 shadow-sm border border-primary/10">
+                        <ShieldIcon className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors duration-200">
+                        {r.roleName}
+                    </span>
+                </div>
+            ),
+        },
+        {
+            key: "assignedEmployees",
+            header: "Assigned",
+            render: (r) => (
+                <div className="flex items-center gap-2 group">
+                    <div className="flex -space-x-2">
+                        {r.assignedEmployees.slice(0, 3).map((_, i) => (
+                            <div
+                                key={i}
+                                className="w-6 h-6 rounded-full bg-accent border-2 border-background flex items-center justify-center text-[10px] font-bold text-accent-foreground z-10 transition-transform hover:-translate-y-1 hover:z-20"
+                            >
+                                <UsersIcon className="w-3 h-3 opacity-50" />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm text-foreground font-medium group-hover:text-primary transition-colors">
+                            {r.assignedEmployees.length}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                            Users
+                        </span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: "permissions",
+            header: "Permissions",
+            hideBelow: "lg",
+            render: (r) => (
+                <div className="flex flex-wrap gap-1.5 max-w-[240px]">
+                    {r.permissions.slice(0, 2).map((p) => (
+                        <span
+                            key={p}
+                            className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-secondary/50 text-secondary-foreground rounded-md border border-border/50 transition-all hover:bg-secondary hover:shadow-sm"
+                        >
+                            {p}
+                        </span>
+                    ))}
+                    {r.permissions.length > 2 && (
+                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded-md border border-border/50">
+                            +{r.permissions.length - 2} more
+                        </span>
+                    )}
+                </div>
+            ),
+        },
+        {
+            key: "createdAt",
+            header: "Created",
+            hideBelow: "md",
+            render: (r) => (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded-md w-fit">
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    {formatDate(r.createdAt)}
+                </div>
+            ),
+        },
+    ];
+
+    // ── Row Actions ──
+    const rowActions: RowAction<CustomRole>[] = [
+        {
+            icon: <EyeIcon className="w-4 h-4" />,
+            label: "View",
+            onClick: (r) => {
+                searchParams.set("viewRole", r.id);
+                setSearchParams(searchParams);
+            },
+        },
+        {
+            icon: <PencilIcon className="w-4 h-4" />,
+            label: "Edit",
+            onClick: (r) => {
+                searchParams.set("editRole", r.id);
+                setSearchParams(searchParams);
+            },
+        },
+        {
+            icon: <Trash2Icon className="w-4 h-4" />,
+            label: "Delete",
+            onClick: (r) => {
+                searchParams.set("deleteRole", r.id);
+                setSearchParams(searchParams);
+            },
+            danger: true,
+        },
+    ];
+
+    // ── Filtering ──
     const filteredRoles = useMemo(() => {
         const q = search.toLowerCase();
         return roles.filter((r) => {
             const matchSearch =
                 !q ||
                 r.roleName.toLowerCase().includes(q) ||
-                r.permissions.some((p) => p.toLowerCase().includes(q)) ||
-                r.assignedEmployees.some((e) => e.fullName.toLowerCase().includes(q));
-
+                r.permissions.some((p) => p.toLowerCase().includes(q));
             const matchDate = (() => {
                 if (dateFilter === "all") return true;
                 const created = new Date(r.createdAt);
                 const now = new Date();
-                if (dateFilter === "this_month") {
+                if (dateFilter === "this_month")
                     return (
                         created.getMonth() === now.getMonth() &&
                         created.getFullYear() === now.getFullYear()
                     );
-                }
                 if (dateFilter === "last_3_months") {
                     const cutoff = new Date(now);
                     cutoff.setMonth(cutoff.getMonth() - 3);
@@ -166,69 +212,62 @@ export default function CustomRolesPage() {
                 }
                 return true;
             })();
-
             return matchSearch && matchDate;
         });
     }, [roles, search, dateFilter]);
 
-    // ── Handlers ──────────────────────────────
-
+    // ── Handlers ──
     function handleCreate(data: CustomRoleFormData) {
-        const employees = ASSIGNABLE_EMPLOYEES.filter((e) =>
-            data.assignedEmployeeIds.includes(e.id),
-        );
         const newRole: CustomRole = {
             id: Date.now().toString(),
             roleName: data.roleName,
-            assignedEmployees: employees,
+            assignedEmployees: [],
             permissions: data.permissions,
             createdBy: "Admin User",
             createdAt: new Date().toISOString().split("T")[0],
         };
         setRoles((prev) => [...prev, newRole]);
+        clearModals();
+
+        // Trigger Success Toaster
+        toast.success("Custom role created successfully.");
+    }
+
+    function handleEditSave(updatedRole: CustomRole) {
+        setRoles((prev) =>
+            prev.map((r) => (r.id === updatedRole.id ? updatedRole : r)),
+        );
+        clearModals();
+
+        // Trigger Update Toaster
+        toast.success("Custom role updated successfully.");
     }
 
     function handleDelete() {
-        if (!deleteRole) return;
-        setRoles((prev) => prev.filter((r) => r.id !== deleteRole.id));
-        setDeleteRole(null);
+        if (!deleteRoleData) return;
+        setRoles((prev) => prev.filter((r) => r.id !== deleteRoleData.id));
+        clearModals();
+        toast.deleted("Custom role deleted successfully.");
     }
 
-    // ── Row actions ────────────────────────────
-
-    const rowActions: RowAction<CustomRole>[] = [
-        {
-            icon: <EyeIcon className="w-4 h-4" />,
-            label: "View",
-            onClick: setViewRole,
-        },
-        {
-            icon: <Trash2Icon className="w-4 h-4" />,
-            label: "Delete",
-            onClick: setDeleteRole,
-            danger: true,
-        },
-    ];
-
-    // ── Render ─────────────────────────────────
-
     return (
-        <div className="space-y-6">
-            {/* Page header */}
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PageHeader
                 title="Custom Roles"
                 subtitle="Define and manage custom permission roles for employees"
             >
                 <Button
                     size="sm"
-                    className="gap-2"
-                    onClick={() => setIsWizardOpen(true)}
+                    className="gap-2 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
+                    onClick={() => {
+                        searchParams.set("createRole", "true");
+                        setSearchParams(searchParams);
+                    }}
                 >
                     <PlusIcon className="w-4 h-4" /> Create Custom Role
                 </Button>
             </PageHeader>
 
-            {/* Table card */}
             <TableCard
                 title="All Custom Roles"
                 description="Search by role name, permission, or assigned employee"
@@ -259,108 +298,40 @@ export default function CustomRolesPage() {
                     columns={ROLE_COLUMNS}
                     data={filteredRoles}
                     actions={rowActions}
-                    emptyMessage="No custom roles found. Create one using the button above."
+                    emptyMessage="No custom roles found."
                 />
             </TableCard>
 
-            {/* Wizard */}
             <CreateRoleWizard
-                open={isWizardOpen}
+                open={isCreateOpen}
                 existingRoleNames={roles.map((r) => r.roleName)}
-                onClose={() => setIsWizardOpen(false)}
+                onClose={clearModals}
                 onSubmit={handleCreate}
             />
 
-            {/* View modal */}
-            <RoleViewModal role={viewRole} onClose={() => setViewRole(null)} />
+            <RoleViewModal role={viewRoleData} onClose={clearModals} />
 
-            {/* Delete dialog using common component */}
+            <EditRoleModal
+                isOpen={!!editRoleData}
+                role={editRoleData}
+                onSave={handleEditSave}
+                onClose={clearModals}
+            />
+
             <ConfirmationModal
-                open={!!deleteRole}
-                onClose={() => setDeleteRole(null)}
+                open={!!deleteRoleData}
+                onClose={clearModals}
                 onConfirm={handleDelete}
-                title={ROLE_MESSAGES.DELETE_CONFIRM_TITLE}
-                message={deleteRole ? ROLE_MESSAGES.DELETE_CONFIRM_DESC(deleteRole.roleName) : ""}
+                title={ROLE_MESSAGES.DELETE_CONFIRM_TITLE || "Delete Custom Role"}
+                message={
+                    deleteRoleData
+                        ? ROLE_MESSAGES.DELETE_CONFIRM_DESC
+                            ? ROLE_MESSAGES.DELETE_CONFIRM_DESC(deleteRoleData.roleName)
+                            : `Are you sure you want to delete ${deleteRoleData.roleName}?`
+                        : ""
+                }
                 confirmText="Delete Role"
             />
         </div>
-    );
-}
-
-// ── Role View Modal ───────────────────────────
-
-function RoleViewModal({
-    role,
-    onClose,
-}: {
-    role: CustomRole | null;
-    onClose: () => void;
-}) {
-    if (!role) return null;
-    return (
-        <Dialog open={!!role} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[650px] w-[95vw] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <ShieldIcon className="w-5 h-5 text-primary" />
-                        {role.roleName}
-                    </DialogTitle>
-                    <DialogDescription>
-                        Created by {role.createdBy} on {formatDate(role.createdAt)}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-5">
-                    {/* Assigned employees */}
-                    <div>
-                        <p className="text-sm font-semibold text-foreground mb-2">
-                            Assigned Employees ({role.assignedEmployees.length})
-                        </p>
-                        <div className="space-y-2">
-                            {role.assignedEmployees.map((emp) => (
-                                <div
-                                    key={emp.id}
-                                    className="flex items-center gap-3 px-3 py-2.5 bg-muted/40 rounded-lg"
-                                >
-                                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                                        <UsersIcon className="w-4 h-4 text-primary" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-foreground">
-                                            {emp.fullName}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {emp.empId}
-                                        </p>
-                                    </div>
-                                    <RoleBadge role={emp.primaryRole} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Permissions */}
-                    <div>
-                        <p className="text-sm font-semibold text-foreground mb-2">
-                            Permissions ({role.permissions.length})
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                            {role.permissions.map((p) => (
-                                <span
-                                    key={p}
-                                    className="inline-flex items-center px-2.5 py-1 bg-primary/10 text-primary text-xs font-medium rounded-md border border-primary/20"
-                                >
-                                    {permissionLabel(p)}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <Button onClick={onClose}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     );
 }
