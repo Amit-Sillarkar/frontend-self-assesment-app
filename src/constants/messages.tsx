@@ -58,3 +58,14 @@ export const ROLE_MESSAGES = {
   STEP2_INCOMPLETE:  "Please select at least one employee to continue.",
   STEP3_INCOMPLETE:  "Please select at least one permission to continue.",
 };
+
+
+export const ASSESSMENT_MESSAGES = {
+  TOTAL_WEIGHTAGE_EXCEEDED: "Total weightage is already 100% or more.",
+  QUESTION_WEIGHTAGE_REQUIRED: "Please add question and weightage for the current row first.",
+  Reporting_Supervisor_is_mandatory: "A Reporting Supervisor is mandatory.",
+  Reporting_Manager_is_mandatory: "A Reporting Manager is mandatory.",
+  Reporting_Manager_order: "Reporting Manager must evaluate AFTER Reporting Supervisor.",
+  Specific_User_selection: "Please select a user for all 'Specific User' steps.",
+  Self_Evaluation_first_step: "Self Evaluation must always be the first step",
+};
