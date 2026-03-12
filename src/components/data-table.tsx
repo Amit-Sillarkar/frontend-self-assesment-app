@@ -20,7 +20,7 @@
 //   <DataTable columns={columns} data={filteredUsers} actions={actions} />
 //
 // Mobile: renders stacked cards automatically using columns[0] as title
-// Desktop: renders a proper <table>
+// Desktop: renders a proper <table> with STICKY HEADER and Scrollable Body
 // ─────────────────────────────────────────────
 
 import { Users } from "lucide-react";
@@ -33,15 +33,15 @@ const HIDE_CLASSES = {
 };
 
 const ALIGN_HEADER = {
-  left:   "text-left",
+  left: "text-left",
   center: "text-center",
-  right:  "text-right",
+  right: "text-right",
 };
 
 const ALIGN_CELL = {
-  left:   "text-left",
+  left: "text-left",
   center: "text-center",
-  right:  "text-right",
+  right: "text-right",
 };
 
 export default function DataTable<T extends { id: string }>({
@@ -53,7 +53,9 @@ export default function DataTable<T extends { id: string }>({
 }: DataTableProps<T>) {
   if (data.length === 0) {
     return (
-      <div className={`py-16 flex flex-col items-center gap-3 text-muted-foreground ${className}`}>
+      <div
+        className={`py-16 flex flex-col items-center gap-3 text-muted-foreground ${className}`}
+      >
         <Users className="w-10 h-10 opacity-25" />
         <p className="text-sm">{emptyMessage}</p>
       </div>
@@ -62,16 +64,23 @@ export default function DataTable<T extends { id: string }>({
 
   return (
     <>
-      {/* ── DESKTOP TABLE ─────────────────────── */}
-      <div className={`hidden md:block overflow-x-auto ${className}`}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-muted/40 border-b border-border">
+      {/* ── DESKTOP TABLE (Sticky Header, Scrollable Body) ── */}
+      {/* FIX APPLIED HERE: 
+          Changed max-h-[60vh] to max-h-[calc(100vh-330px)] 
+          This dynamically calculates the exact height needed to kill the outer scrollbar!
+      */}
+      <div
+        className={`hidden md:block w-full overflow-auto max-h-[calc(100vh-330px)] custom-scrollbar border border-border/50 rounded-lg bg-card shadow-sm ${className}`}
+      >
+        <table className="w-full text-sm relative text-left">
+          {/* Sticky Header */}
+          <thead className="bg-muted/95 backdrop-blur-md text-muted-foreground sticky top-0 z-10 shadow-sm">
+            <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
                   className={[
-                    "px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider",
+                    "px-4 py-3.5 text-xs font-semibold uppercase tracking-wider border-b border-border/60",
                     ALIGN_HEADER[col.align ?? "left"],
                     col.hideBelow ? HIDE_CLASSES[col.hideBelow] : "",
                     col.width ?? "",
@@ -81,22 +90,27 @@ export default function DataTable<T extends { id: string }>({
                 </th>
               ))}
               {actions.length > 0 && (
-                <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
+                <th className="px-4 py-3.5 text-xs font-semibold uppercase tracking-wider text-right border-b border-border/60">
                   Actions
                 </th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+
+          {/* Scrollable Body */}
+          <tbody className="divide-y divide-border/50">
             {data.map((row) => (
-              <tr key={row.id} className="hover:bg-muted/20 transition-colors">
+              <tr
+                key={row.id}
+                className="hover:bg-muted/30 transition-colors group"
+              >
                 {columns.map((col) => {
                   const raw = (row as Record<string, unknown>)[col.key];
                   return (
                     <td
                       key={col.key}
                       className={[
-                        "px-4 py-3.5",
+                        "px-4 py-3.5 text-foreground",
                         ALIGN_CELL[col.align ?? "left"],
                         col.hideBelow ? HIDE_CLASSES[col.hideBelow] : "",
                       ].join(" ")}
@@ -105,9 +119,10 @@ export default function DataTable<T extends { id: string }>({
                     </td>
                   );
                 })}
+
                 {actions.length > 0 && (
                   <td className="px-4 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-0.5">
+                    <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                       {actions
                         .filter((a) => !a.hidden?.(row))
                         .map((action) => (
@@ -116,10 +131,10 @@ export default function DataTable<T extends { id: string }>({
                             title={action.label}
                             onClick={() => action.onClick(row)}
                             className={[
-                              "w-8 h-8 flex items-center justify-center rounded-md transition-colors",
+                              "w-8 h-8 flex items-center justify-center rounded-md transition-all duration-200",
                               action.danger
-                                ? "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                                ? "text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:shadow-sm"
+                                : "text-muted-foreground hover:bg-primary/10 hover:text-primary hover:shadow-sm",
                             ].join(" ")}
                           >
                             {action.icon}
@@ -135,29 +150,33 @@ export default function DataTable<T extends { id: string }>({
       </div>
 
       {/* ── MOBILE CARDS ──────────────────────── */}
-      <div className="md:hidden divide-y divide-border">
+      <div className="md:hidden divide-y divide-border/50 bg-card border border-border/50 rounded-lg overflow-hidden">
         {data.map((row) => {
-          // First 2 columns = title row; rest = details
           const [titleCol, subCol, ...restCols] = columns;
           return (
-            <div key={row.id} className="px-4 py-4 space-y-3">
-              {/* Title row */}
+            <div
+              key={row.id}
+              className="px-4 py-4 space-y-3 hover:bg-muted/10 transition-colors"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-foreground">
                     {titleCol.render
                       ? titleCol.render(row)
-                      : String((row as Record<string, unknown>)[titleCol.key] ?? "")}
+                      : String(
+                          (row as Record<string, unknown>)[titleCol.key] ?? "",
+                        )}
                   </div>
                   {subCol && (
                     <div className="text-xs text-muted-foreground mt-0.5">
                       {subCol.render
                         ? subCol.render(row)
-                        : String((row as Record<string, unknown>)[subCol.key] ?? "")}
+                        : String(
+                            (row as Record<string, unknown>)[subCol.key] ?? "",
+                          )}
                     </div>
                   )}
                 </div>
-                {/* Show last column (usually badge/status) on the right */}
                 {restCols.length > 0 && (
                   <div className="flex-shrink-0">
                     {(() => {
@@ -169,22 +188,25 @@ export default function DataTable<T extends { id: string }>({
                 )}
               </div>
 
-              {/* Middle columns as key-value pairs */}
               {restCols.slice(0, -1).map((col) => {
                 const raw = (row as Record<string, unknown>)[col.key];
                 return (
-                  <div key={col.key} className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{col.header}</span>
-                    <span className="text-foreground font-medium">
+                  <div
+                    key={col.key}
+                    className="flex items-center justify-between text-xs bg-muted/20 px-2.5 py-1.5 rounded-md"
+                  >
+                    <span className="text-muted-foreground font-medium">
+                      {col.header}
+                    </span>
+                    <span className="text-foreground font-semibold">
                       {col.render ? col.render(row) : String(raw ?? "")}
                     </span>
                   </div>
                 );
               })}
 
-              {/* Action buttons */}
               {actions.length > 0 && (
-                <div className="flex items-center gap-1.5 pt-1">
+                <div className="flex items-center gap-2 pt-2">
                   {actions
                     .filter((a) => !a.hidden?.(row))
                     .map((action) => (
@@ -192,10 +214,10 @@ export default function DataTable<T extends { id: string }>({
                         key={action.label}
                         onClick={() => action.onClick(row)}
                         className={[
-                          "flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-md border text-xs font-medium transition-colors",
+                          "flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-md border text-xs font-semibold transition-all shadow-sm hover:shadow-md",
                           action.danger
-                            ? "border-destructive/30 text-destructive hover:bg-destructive/10"
-                            : "border-border text-foreground hover:bg-accent hover:text-accent-foreground",
+                            ? "border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            : "border-border text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary",
                         ].join(" ")}
                       >
                         <span className="w-3.5 h-3.5">{action.icon}</span>

@@ -18,8 +18,8 @@ import SearchFilterBar from "@/components/search-filter-bar";
 import { ConfirmationModal } from "@/components/common/confirmation-modal";
 import type { ColumnDef, RowAction } from "@/types/table";
 
-// Import useToast hook
 import { useToast } from "@/components/toast-notification";
+import { usePagination } from "@/components/table-pagination"; // <-- 1. Imported Pagination
 
 import CreateRoleWizard from "./components/create-role-wizard";
 import RoleViewModal from "./components/role-view-modal";
@@ -39,8 +39,6 @@ function formatDate(iso: string) {
 
 export default function CustomRolesPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-
-    // Initialize toaster
     const toast = useToast();
 
     const [roles, setRoles] = useState<CustomRole[]>(MOCK_CUSTOM_ROLES);
@@ -67,7 +65,6 @@ export default function CustomRolesPage() {
         [deleteRoleId, roles],
     );
 
-    // ── URL Clear Helper ──
     const clearModals = () => {
         searchParams.delete("createRole");
         searchParams.delete("editRole");
@@ -159,7 +156,6 @@ export default function CustomRolesPage() {
         },
     ];
 
-    // ── Row Actions ──
     const rowActions: RowAction<CustomRole>[] = [
         {
             icon: <EyeIcon className="w-4 h-4" />,
@@ -180,11 +176,11 @@ export default function CustomRolesPage() {
         {
             icon: <Trash2Icon className="w-4 h-4" />,
             label: "Delete",
+            danger: true,
             onClick: (r) => {
                 searchParams.set("deleteRole", r.id);
                 setSearchParams(searchParams);
             },
-            danger: true,
         },
     ];
 
@@ -216,6 +212,9 @@ export default function CustomRolesPage() {
         });
     }, [roles, search, dateFilter]);
 
+    // ── 2. Initialize Pagination Hook ──
+    const { paginated, PaginationBar } = usePagination(filteredRoles);
+
     // ── Handlers ──
     function handleCreate(data: CustomRoleFormData) {
         const newRole: CustomRole = {
@@ -228,8 +227,6 @@ export default function CustomRolesPage() {
         };
         setRoles((prev) => [...prev, newRole]);
         clearModals();
-
-        // Trigger Success Toaster
         toast.success("Custom role created successfully.");
     }
 
@@ -238,8 +235,6 @@ export default function CustomRolesPage() {
             prev.map((r) => (r.id === updatedRole.id ? updatedRole : r)),
         );
         clearModals();
-
-        // Trigger Update Toaster
         toast.success("Custom role updated successfully.");
     }
 
@@ -247,7 +242,8 @@ export default function CustomRolesPage() {
         if (!deleteRoleData) return;
         setRoles((prev) => prev.filter((r) => r.id !== deleteRoleData.id));
         clearModals();
-        toast.deleted("Custom role deleted successfully.");
+        if (toast.deleted) toast.deleted("Custom role deleted successfully.");
+        else toast.success("Custom role deleted successfully.");
     }
 
     return (
@@ -272,7 +268,6 @@ export default function CustomRolesPage() {
                 title="All Custom Roles"
                 description="Search by role name, permission, or assigned employee"
                 count={filteredRoles.length}
-                footer={`Showing ${filteredRoles.length} of ${roles.length} roles`}
                 searchArea={
                     <SearchFilterBar
                         search={search}
@@ -294,12 +289,16 @@ export default function CustomRolesPage() {
                     />
                 }
             >
+                {/* 3. Pass paginated data instead of filteredRoles */}
                 <DataTable
                     columns={ROLE_COLUMNS}
-                    data={filteredRoles}
+                    data={paginated}
                     actions={rowActions}
                     emptyMessage="No custom roles found."
                 />
+
+                {/* 4. Render PaginationBar at the bottom */}
+                <PaginationBar />
             </TableCard>
 
             <CreateRoleWizard
@@ -308,16 +307,13 @@ export default function CustomRolesPage() {
                 onClose={clearModals}
                 onSubmit={handleCreate}
             />
-
             <RoleViewModal role={viewRoleData} onClose={clearModals} />
-
             <EditRoleModal
                 isOpen={!!editRoleData}
                 role={editRoleData}
                 onSave={handleEditSave}
                 onClose={clearModals}
             />
-
             <ConfirmationModal
                 open={!!deleteRoleData}
                 onClose={clearModals}
