@@ -15,7 +15,6 @@ import PageHeader from "@/components/page-header";
 import TableCard from "@/components/table-card";
 import DataTable from "@/components/data-table";
 import SearchFilterBar from "@/components/search-filter-bar";
-import { ConfirmationModal } from "@/components/common/confirmation-modal";
 import type { ColumnDef, RowAction } from "@/types/table";
 
 import { useToast } from "@/components/toast-notification";
@@ -28,6 +27,7 @@ import EditRoleModal from "./components/edit-role-modal";
 import { MOCK_CUSTOM_ROLES } from "@/mockdata/custom-roles";
 import type { CustomRole, CustomRoleFormData } from "./types";
 import { ROLE_MESSAGES } from "@/constants/messages";
+import { ConfirmationModal } from "@/components/common/confirmation-modal";
 
 function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("en-IN", {
@@ -315,6 +315,7 @@ export default function CustomRolesPage() {
                 onClose={clearModals}
             />
             <ConfirmationModal
+                variant="danger"
                 open={!!deleteRoleData}
                 onClose={clearModals}
                 onConfirm={handleDelete}

@@ -7,6 +7,8 @@ import ComponentsPage from "@/pages/custom-component";
 import UserManagementPage from "@/pages/usermanagement";
 import CustomRolesPage from "@/pages/rolemangement";
 import AssessmentBuilderPage from "@/pages/assessment-builder";
+import AssessmentPage from "@/pages/assement";
+import PendingAssessmentsPage from "@/pages/pending-assessment";
 
 // ─────────────────────────────────────────────
 // PRIVATE ROUTES
@@ -21,5 +23,7 @@ export const privateRoutes = (
     <Route path={ROUTE_PATHS.USER_MANAGEMENT} element={<UserManagementPage />} />
     <Route path={ROUTE_PATHS.CUSTOM_ROLES}    element={<CustomRolesPage />} />
     <Route path={ROUTE_PATHS.ASSESSMENT_BUILDER} element={<AssessmentBuilderPage />} />
+    <Route path={ROUTE_PATHS.PENDING_ASSESSMENTS} element={<PendingAssessmentsPage />} />
+    <Route path={ROUTE_PATHS.ASSESSMENT} element={<AssessmentPage />} />
   </Route>
 );

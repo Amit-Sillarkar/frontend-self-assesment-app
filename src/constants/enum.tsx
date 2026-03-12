@@ -18,6 +18,8 @@ export const ROUTE_PATHS = {
   USER_MANAGEMENT: "/dashboard/user-management",
   CUSTOM_ROLES: "/dashboard/custom-roles",
   ASSESSMENT_BUILDER: "/dashboard/assessment-builder",
+  PENDING_ASSESSMENTS: "/dashboard/pending-assessments",
+  ASSESSMENT: "/dashboard/pending-assessments/assessment/:id",
 };
 
 export const NAV_ITEM_KEYS = {

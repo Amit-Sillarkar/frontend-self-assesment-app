@@ -18,7 +18,6 @@ import SearchFilterBar from "@/components/search-filter-bar";
 import RoleBadge from "@/components/role-badge";
 import { usePagination } from "@/components/table-pagination";
 import { useToast } from "@/components/toast-notification";
-import { ConfirmationModal } from "@/components/common/confirmation-modal";
 import type { ColumnDef, RowAction } from "@/types/table";
 
 import UserViewModal from "./components/user-view-modal";
@@ -28,6 +27,7 @@ import type { User, UserFormData } from "./types";
 import { MOCK_USERS } from "@/mockdata/users";
 import { PRIMARY_ROLE_OPTIONS } from "@/constants/enum";
 import { USER_MESSAGES } from "@/constants/messages";
+import { ConfirmationModal } from "@/components/common/confirmation-modal";
 
 const USER_COLUMNS: ColumnDef<User>[] = [
   {
@@ -262,6 +262,7 @@ export default function UserManagementPage() {
 
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
+        variant="danger"
         open={!!deleteUser}
         onClose={clearModals}
         onConfirm={handleDelete}

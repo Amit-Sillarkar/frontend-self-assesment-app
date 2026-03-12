@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import PageHeader from "@/components/page-header";
-import { ConfirmationModal } from "@/components/common/confirmation-modal";
 import { useToast } from "@/components/toast-notification";
 
 import { ViewAssessmentDialog } from "./components/view-assessment-dialog";
 import { CreateAssessmentDialog } from "./components/create-assessment-dialog";
 import { initialAssessments, DESIGNATION_OPTIONS } from "@/mockdata/assessments";
 import type { Assessment } from "./types";
+import { ConfirmationModal } from "@/components/common/confirmation-modal";
 
 export default function AssessmentBuilderPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -138,7 +138,7 @@ export default function AssessmentBuilderPage() {
 
       <ViewAssessmentDialog open={!!viewAssessmentData} assessment={viewAssessmentData} onClose={clearModals} />
       <CreateAssessmentDialog open={isCreateOpen || !!editAssessmentData} onOpenChange={(isOpen) => !isOpen && clearModals()} onSave={handleSaveAssessment} initialData={editAssessmentData} />
-      <ConfirmationModal open={!!deleteAssessmentData} onClose={clearModals} onConfirm={handleDelete} title="Delete Assessment" message={deleteAssessmentData ? `Are you sure you want to delete "${deleteAssessmentData.title}"?` : ""} confirmText="Delete Assessment" />
+      <ConfirmationModal variant="danger" open={!!deleteAssessmentData} onClose={clearModals} onConfirm={handleDelete} title="Delete Assessment" message={deleteAssessmentData ? `Are you sure you want to delete "${deleteAssessmentData.title}"?` : ""} confirmText="Delete Assessment" />
     </div>
   );
 }

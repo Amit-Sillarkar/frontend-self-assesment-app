@@ -44,4 +44,10 @@ export const menuItems = [
     icon: FileSignatureIcon,  
     path: ROUTE_PATHS.ASSESSMENT_BUILDER,
   },
+  {
+    key: "pending-assessments",
+    label: "Pending Assessments",
+    icon: FileSignatureIcon,
+    path: ROUTE_PATHS.PENDING_ASSESSMENTS,
+  },
 ];

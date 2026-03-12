@@ -4,7 +4,7 @@
 // Dummy data — replace with real API calls.
 // ─────────────────────────────────────────────
 
-import type { User } from "@/pages/user-management/types";
+import type { User } from "@/pages/usermanagement/types";
 
 export const MOCK_USERS: User[] = [
   {
