@@ -1,5 +1,5 @@
 import { ROUTE_PATHS } from "@/constants/enum";
-import { PaletteIcon, LayoutIcon, UsersIcon, BrickWallShieldIcon, FileSignatureIcon } from "lucide-react";
+import { PaletteIcon, LayoutIcon, UsersIcon, BrickWallShieldIcon, FileSignatureIcon, DatabaseIcon } from "lucide-react";
 
 // ─────────────────────────────────────────────
 // SIDEBAR MENU ITEMS
@@ -51,9 +51,21 @@ export const menuItems = [
     path: ROUTE_PATHS.PENDING_ASSESSMENTS,
   },
   {
+    key: "assessment-tracking",
+    label: "Assessment Tracking",
+    icon: FileSignatureIcon,
+    path: ROUTE_PATHS.ASSESSMENT_TRACKING,
+  },
+  {
     key: "supervisor-approval",
     label: "Supervisor Approval",
     icon: FileSignatureIcon,
     path: ROUTE_PATHS.SUPERVISOR_APPROVAL,
+  },
+  {
+    key: "truein-sync",
+    label: "Truein Sync",
+    icon: DatabaseIcon,
+    path: ROUTE_PATHS.TRUEIN_SYNC,
   },
 ];
