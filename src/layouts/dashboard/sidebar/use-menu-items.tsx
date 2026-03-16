@@ -50,4 +50,10 @@ export const menuItems = [
     icon: FileSignatureIcon,
     path: ROUTE_PATHS.PENDING_ASSESSMENTS,
   },
+  {
+    key: "supervisor-approval",
+    label: "Supervisor Approval",
+    icon: FileSignatureIcon,
+    path: ROUTE_PATHS.SUPERVISOR_APPROVAL,
+  },
 ];

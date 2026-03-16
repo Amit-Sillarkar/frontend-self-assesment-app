@@ -20,6 +20,8 @@ export const ROUTE_PATHS = {
   ASSESSMENT_BUILDER: "/dashboard/assessment-builder",
   PENDING_ASSESSMENTS: "/dashboard/pending-assessments",
   ASSESSMENT: "/dashboard/pending-assessments/assessment/:id",
+  SUPERVISOR_APPROVAL: "/dashboard/supervisor-approval",
+  SUPERVISOR_REVIEW: "/dashboard/supervisor-approval/review/:id",
 };
 
 export const NAV_ITEM_KEYS = {
