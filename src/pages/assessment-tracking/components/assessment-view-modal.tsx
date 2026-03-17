@@ -13,8 +13,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import type { AssessmentTrackingRecord } from "../type";
+import { getStatusBadge } from "./statusbadge";
 
 interface Props {
   record: AssessmentTrackingRecord | null;
@@ -54,23 +54,10 @@ function DetailField({
   );
 }
 
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'Completed':
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-none">Completed</Badge>;
-    case 'Under Review':
-      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-none">Under Review</Badge>;
-    case 'Needs Revision':
-      return <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border-none">Needs Revision</Badge>;
-    default:
-      return <Badge>{status}</Badge>;
-  }
-};
-
 export default function AssessmentViewModal({ record, onClose }: Props) {
   return (
     <Dialog open={!!record} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] p-0 overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-150 w-[95vw] max-h-[90vh] p-0 overflow-hidden flex flex-col">
         {/* Decorative Header Gradient */}
         <div className="h-20 sm:h-24 bg-linear-to-r from-primary/20 via-primary/5 to-transparent w-full absolute top-0 left-0 -z-10" />
         

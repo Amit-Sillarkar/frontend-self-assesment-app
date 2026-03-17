@@ -150,63 +150,50 @@ export default function DataTable<T extends { id: string }>({
       </div>
 
       {/* ── MOBILE CARDS ──────────────────────── */}
-      <div className="md:hidden divide-y divide-border/50 bg-card border border-border/50 rounded-lg overflow-hidden">
+      <div className="md:hidden space-y-4">
         {data.map((row) => {
-          const [titleCol, subCol, ...restCols] = columns;
+          // titleCol is usually the primary identifier (e.g., Name or ID)
+          const [titleCol, ...detailCols] = columns;
+          
           return (
             <div
               key={row.id}
-              className="px-4 py-4 space-y-3 hover:bg-muted/10 transition-colors"
+              className="bg-card border border-border rounded-xl overflow-hidden shadow-sm transition-all active:scale-[0.98]"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-foreground">
+              {/* Card Header: Uses Primary Color for the icon and font-sans from @theme */}
+              <div className="px-4 py-3 bg-muted/20 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div className="font-bold text-sm text-foreground tracking-tight">
                     {titleCol.render
                       ? titleCol.render(row)
-                      : String(
-                          (row as Record<string, unknown>)[titleCol.key] ?? "",
-                        )}
+                      : String((row as Record<string, unknown>)[titleCol.key] ?? "")}
                   </div>
-                  {subCol && (
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {subCol.render
-                        ? subCol.render(row)
-                        : String(
-                            (row as Record<string, unknown>)[subCol.key] ?? "",
-                          )}
-                    </div>
-                  )}
                 </div>
-                {restCols.length > 0 && (
-                  <div className="flex-shrink-0">
-                    {(() => {
-                      const last = restCols[restCols.length - 1];
-                      const raw = (row as Record<string, unknown>)[last.key];
-                      return last.render ? last.render(row) : String(raw ?? "");
-                    })()}
-                  </div>
-                )}
               </div>
 
-              {restCols.slice(0, -1).map((col) => {
-                const raw = (row as Record<string, unknown>)[col.key];
-                return (
-                  <div
-                    key={col.key}
-                    className="flex items-center justify-between text-xs bg-muted/20 px-2.5 py-1.5 rounded-md"
-                  >
-                    <span className="text-muted-foreground font-medium">
-                      {col.header}
-                    </span>
-                    <span className="text-foreground font-semibold">
-                      {col.render ? col.render(row) : String(raw ?? "")}
-                    </span>
-                  </div>
-                );
-              })}
+              {/* Card Body: 2-Column Grid for Details */}
+              <div className="px-4 py-4 grid grid-cols-2 gap-y-4 gap-x-3">
+                {detailCols.map((col) => {
+                  const raw = (row as Record<string, unknown>)[col.key];
+                  return (
+                    <div key={col.key} className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                        {col.header}
+                      </span>
+                      <div className="text-xs font-medium text-foreground">
+                        {col.render ? col.render(row) : String(raw ?? "-")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
+              {/* Card Footer: Standardized Action Buttons */}
               {actions.length > 0 && (
-                <div className="flex items-center gap-2 pt-2">
+                <div className="px-3 py-3 bg-muted/5 border-t border-border flex items-center gap-2">
                   {actions
                     .filter((a) => !a.hidden?.(row))
                     .map((action) => (
@@ -214,10 +201,10 @@ export default function DataTable<T extends { id: string }>({
                         key={action.label}
                         onClick={() => action.onClick(row)}
                         className={[
-                          "flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-md border text-xs font-semibold transition-all shadow-sm hover:shadow-md",
+                          "flex-1 flex items-center justify-center gap-2 h-9 rounded-md text-xs font-semibold transition-all border",
                           action.danger
-                            ? "border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                            : "border-border text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary",
+                            ? "bg-destructive/5 border-destructive/20 text-destructive hover:bg-destructive hover:text-white"
+                            : "bg-background border-border text-foreground hover:bg-accent hover:text-accent-foreground",
                         ].join(" ")}
                       >
                         <span className="w-3.5 h-3.5">{action.icon}</span>
