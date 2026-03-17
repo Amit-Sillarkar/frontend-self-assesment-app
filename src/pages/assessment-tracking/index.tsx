@@ -1,36 +1,20 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EyeIcon, FileText, Clock, CheckCircle, Percent } from 'lucide-react';
-
 import PageHeader from '@/components/page-header';
 import TableCard from '@/components/table-card';
 import DataTable from '@/components/data-table';
 import SearchFilterBar from '@/components/search-filter-bar';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePagination } from '@/components/table-pagination';
 import type { ColumnDef, RowAction } from '@/types/table';
-
 import { submittedAssessments } from '@/mockdata/assessment-tracking';
 import { type AssessmentTrackingRecord } from './type';
 import AssessmentViewModal from './components/assessment-view-modal';
+import { getStatusBadge } from './components/statusbadge';
 
-// ── Helper to render the status badge ───────────────────────
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'Completed':
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-none">Completed</Badge>;
-    case 'Under Review':
-      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-none">Under Review</Badge>;
-    case 'Needs Revision':
-      return <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border-none">Needs Revision</Badge>;
-    default:
-      return <Badge>{status}</Badge>;
-  }
-};
 
-// ── Column Definitions ──────────────────────────────────────
 const COLUMNS: ColumnDef<AssessmentTrackingRecord>[] = [
   {
     key: "employeeName",
