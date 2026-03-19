@@ -20,7 +20,7 @@ import { usePagination } from "@/components/table-pagination";
 import { useToast } from "@/components/toast-notification";
 import type { ColumnDef, RowAction } from "@/types/table";
 
-import UserViewModal from "./components/user-view-modal";
+import UserProfileModal from "@/components/common/user-profile-modal";
 import UserFormModal from "./components/user-form-modal";
 
 import type { User, UserFormData } from "./types";
@@ -248,8 +248,11 @@ export default function UserManagementPage() {
         <PaginationBar />
       </TableCard>
 
-      {/* View Modal */}
-      <UserViewModal user={viewUser} onClose={clearModals} />
+      <UserProfileModal 
+        isOpen={!!viewUser} 
+        user={viewUser} 
+        onClose={clearModals} 
+      />
 
       {/* Self-contained Form Modal mapping to Add or Edit */}
       <UserFormModal
