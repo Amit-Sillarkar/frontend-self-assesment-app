@@ -26,7 +26,7 @@ import {
   type FetchBaseQueryError,
 } from "@reduxjs/toolkit/query/react";
 
-const API_URL = "http://localhost:3001/v1";
+const API_URL = import.meta.env.VITE_API_URL;
 
 // ── Generic response wrappers (used by all API slices) ──
 export interface ApiResponse<T> {
