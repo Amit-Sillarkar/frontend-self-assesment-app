@@ -13,6 +13,7 @@ import AssessmentTrackingPage from "@/pages/assessment-tracking";
 import SupervisorApprovalListPage from "@/pages/supervisor-approoval";
 import SupervisorReviewPage from "@/pages/supervisor-approoval/review";
 import TrueinSyncPage from "@/pages/truein-sync";
+import AssessmentTrackingViewPage from "@/pages/assessment-tracking/components/view";
 
 // ─────────────────────────────────────────────
 // PRIVATE ROUTES
@@ -31,6 +32,7 @@ export const privateRoutes = (
     <Route path={ROUTE_PATHS.PENDING_ASSESSMENTS} element={<PendingAssessmentsPage />} />
     <Route path={ROUTE_PATHS.ASSESSMENT} element={<AssessmentPage />} />
     <Route path={ROUTE_PATHS.ASSESSMENT_TRACKING} element={<AssessmentTrackingPage />} />
+    <Route path={ROUTE_PATHS.ASSESSMENT_TRACKING_VIEW} element={<AssessmentTrackingViewPage />} />
     <Route path={ROUTE_PATHS.SUPERVISOR_APPROVAL} element={<SupervisorApprovalListPage />} />
     <Route path={ROUTE_PATHS.SUPERVISOR_REVIEW} element={<SupervisorReviewPage />} />
     <Route path={ROUTE_PATHS.TRUEIN_SYNC} element={<TrueinSyncPage />} />
