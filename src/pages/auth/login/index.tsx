@@ -1,40 +1,46 @@
+// ─────────────────────────────────────────────
+// FILE: src/pages/auth/login/index.tsx (UPDATED)
+//
+// WHAT CHANGED:
+//   - handleSubmit calls login(email, password) from AuthContext
+//   - Added isSubmitting state for button loading
+//   - Displays API error messages
+//   - On success navigates to DASHBOARD
+// ─────────────────────────────────────────────
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { APP_NAME, APP_DESCRIPTION } from "@/constants";
 import { AUTH_MESSAGES } from "@/constants/messages";
 import { ROUTE_PATHS } from "@/constants/enum";
 import { useAuth } from "@/context/AuthContext";
 import logo from "@/assets/logo.jpeg";
-// ─────────────────────────────────────────────
-// LOGIN PAGE
-// ─────────────────────────────────────────────
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsSubmitting(true);
+
     try {
-      // TODO: Replace with real auth when API is ready
-      navigate(ROUTE_PATHS.COLORS);
-    } catch {
-      setError(AUTH_MESSAGES.LOGIN_FAILED);
+      await login(email, password);
+      navigate(ROUTE_PATHS.DASHBOARD);
+    } catch (err: any) {
+      setError(err?.data?.message || AUTH_MESSAGES.LOGIN_FAILED);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -42,7 +48,6 @@ export default function LoginPage() {
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-background font-sans">
       {/* ── LEFT SIDE: BRANDING (Hidden on Mobile) ── */}
       <div className="hidden md:flex md:w-1/2 bg-muted/30 items-center justify-center p-12 relative overflow-hidden">
-        {/* Decorative background element using brand primary */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
 
@@ -81,6 +86,13 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+              <p className="text-sm text-destructive font-medium">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
@@ -94,6 +106,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -112,6 +125,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
@@ -129,18 +143,17 @@ export default function LoginPage() {
 
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
             >
-              Sign In
+              {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              Forgot your password? {""}
-              <button
-                className="font-bold text-primary hover:underline"
-              >
+              Forgot your password?{" "}
+              <button className="font-bold text-primary hover:underline">
                 please contact admin
               </button>
             </p>

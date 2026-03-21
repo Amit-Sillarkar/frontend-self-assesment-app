@@ -1,5 +1,21 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-// import { api } from "@/lib/api";
+// ─────────────────────────────────────────────
+// FILE: src/context/AuthContext.tsx (UPDATED)
+//
+// WHAT CHANGED:
+//   - Removed mock user data
+//   - Uses useLoginMutation from RTK Query
+//   - login() accepts email + password directly
+//   - Persists user in localStorage
+// ─────────────────────────────────────────────
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { useLoginMutation } from "@/store/api/authApi";
 
 interface User {
   id: string;
@@ -11,9 +27,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (token: string, user: User) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,52 +36,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loginMutation] = useLoginMutation();
 
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) throw new Error("No token");
-
-      // Verify token by fetching profile
-      // const { data } = await api.get("/users/me");
-      // setUser(data.data);
-      setUser({
-        id: "mock-user-123",
-        email: "test@example.com",
-        fullName: "Test User",
-        role: "user"
-      });
-    } catch (error) {
-      setUser(null);
-      localStorage.removeItem("accessToken");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // On mount: restore session from localStorage
   useEffect(() => {
-    checkAuth();
+    const token = localStorage.getItem("accessToken");
+    const savedUser = localStorage.getItem("user");
+
+    if (token && savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user");
+      }
+    }
+    setIsLoading(false);
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem("accessToken", token);
+  // Login: call API → store token + user
+  const login = async (email: string, password: string) => {
+    const result = await loginMutation({ email, password }).unwrap();
+    const { accessToken, user: userData } = result.data;
+
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
   };
 
+  // Logout: clear everything → redirect
   const logout = async () => {
-    try {
-      // await api.post("/auth/logout"); // Backend logout
-    } catch (error) {
-      console.error("Logout failed", error);
-    } finally {
-      localStorage.removeItem("accessToken");
-      setUser(null);
-      window.location.href = "/login";
-    }
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    setUser(null);
+    window.location.href = "/login";
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
