@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { EyeIcon, FileText, Clock, CheckCircle, Percent } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import TableCard from '@/components/table-card';
@@ -11,7 +11,6 @@ import { usePagination } from '@/components/table-pagination';
 import type { ColumnDef, RowAction } from '@/types/table';
 import { submittedAssessments } from '@/mockdata/assessment-tracking';
 import { type AssessmentTrackingRecord } from './type';
-import AssessmentViewModal from './components/assessment-view-modal';
 import { getStatusBadge } from './components/statusbadge';
 
 
@@ -61,7 +60,7 @@ const COLUMNS: ColumnDef<AssessmentTrackingRecord>[] = [
 ];
 
 export default function AssessmentTrackingPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate(); // Added navigator
   const [searchQuery, setSearchQuery] = useState("");
   const [designationFilter, setDesignationFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -89,14 +88,7 @@ export default function AssessmentTrackingPage() {
     return Array.from(new Set(statuses));
   }, [allData]);
 
-  // --- 3. URL MODAL STATE ---
-  const viewRecordId = searchParams.get("viewRecord");
-  const viewRecord = useMemo(
-    () => allData.find((r) => r.id === viewRecordId) || null,
-    [allData, viewRecordId]
-  );
-
-  // --- 4. DATA FILTERING ---
+  // --- 3. DATA FILTERING ---
   const filteredData = useMemo(() => {
     const lowerQuery = searchQuery.toLowerCase();
     
@@ -105,10 +97,7 @@ export default function AssessmentTrackingPage() {
       const matchesSearch = item.employeeName.toLowerCase().includes(lowerQuery) ||
                             item.assessmentName.toLowerCase().includes(lowerQuery);
       
-      // Status matching (Exact match now since options are dynamically generated)
       const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-      
-      // Designation/Department matching (Exact match)
       const matchesDesignation = designationFilter === "all" || item.department === designationFilter;
 
       return matchesSearch && matchesStatus && matchesDesignation;
@@ -118,20 +107,13 @@ export default function AssessmentTrackingPage() {
   // Initialize Pagination Hook
   const { paginated, PaginationBar } = usePagination(filteredData);
 
-  // Clear modal URL parameter
-  const clearModals = () => {
-    searchParams.delete("viewRecord");
-    setSearchParams(searchParams);
-  };
-
-  // Define Row Actions
+  // Define Row Actions pushing to new route
   const rowActions: RowAction<AssessmentTrackingRecord>[] = [
     {
       icon: <EyeIcon className="w-4 h-4" />,
       label: "View Submission",
       onClick: (record) => {
-        searchParams.set("viewRecord", record.id);
-        setSearchParams(searchParams);
+        navigate(`/dashboard/assessment-tracking/view/${record.id}`); // Navigate to new screen
       },
     }
   ];
@@ -145,49 +127,11 @@ export default function AssessmentTrackingPage() {
 
       {/* --- DASHBOARD METRICS --- */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-2">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-muted-foreground">Total Assessments</p>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="text-2xl font-bold">{dashboardStats.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">All submissions</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
-              <Clock className="h-4 w-4 text-amber-500" />
-            </div>
-            <div className="text-2xl font-bold">{dashboardStats.pending}</div>
-            <p className="text-xs text-muted-foreground mt-1">Awaiting action</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-muted-foreground">Completed</p>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            </div>
-            <div className="text-2xl font-bold">{dashboardStats.completed}</div>
-            <p className="text-xs text-muted-foreground mt-1">Fully processed</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-muted-foreground">Completion Rate</p>
-              <Percent className="h-4 w-4 text-blue-500" />
-            </div>
-            <div className="text-2xl font-bold">{dashboardStats.rate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">Based on total</p>
-          </CardContent>
-        </Card>
+         {/* ... (Metrics code stays the same) ... */}
+         <Card><CardContent className="p-6"><div className="flex items-center justify-between space-y-0 pb-2"><p className="text-sm font-medium text-muted-foreground">Total Assessments</p><FileText className="h-4 w-4 text-muted-foreground" /></div><div className="text-2xl font-bold">{dashboardStats.total}</div><p className="text-xs text-muted-foreground mt-1">All submissions</p></CardContent></Card>
+        <Card><CardContent className="p-6"><div className="flex items-center justify-between space-y-0 pb-2"><p className="text-sm font-medium text-muted-foreground">Pending Review</p><Clock className="h-4 w-4 text-amber-500" /></div><div className="text-2xl font-bold">{dashboardStats.pending}</div><p className="text-xs text-muted-foreground mt-1">Awaiting action</p></CardContent></Card>
+        <Card><CardContent className="p-6"><div className="flex items-center justify-between space-y-0 pb-2"><p className="text-sm font-medium text-muted-foreground">Completed</p><CheckCircle className="h-4 w-4 text-green-500" /></div><div className="text-2xl font-bold">{dashboardStats.completed}</div><p className="text-xs text-muted-foreground mt-1">Fully processed</p></CardContent></Card>
+        <Card><CardContent className="p-6"><div className="flex items-center justify-between space-y-0 pb-2"><p className="text-sm font-medium text-muted-foreground">Completion Rate</p><Percent className="h-4 w-4 text-blue-500" /></div><div className="text-2xl font-bold">{dashboardStats.rate}%</div><p className="text-xs text-muted-foreground mt-1">Based on total</p></CardContent></Card>
       </div>
 
       <TableCard 
@@ -207,11 +151,8 @@ export default function AssessmentTrackingPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Designations</SelectItem>
-                {/* Dynamically mapped designations */}
                 {uniqueDesignations.map((dept) => (
-                  <SelectItem key={dept} value={dept}>
-                    {dept}
-                  </SelectItem>
+                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -222,11 +163,8 @@ export default function AssessmentTrackingPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                {/* Dynamically mapped statuses */}
                 {uniqueStatuses.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -241,9 +179,6 @@ export default function AssessmentTrackingPage() {
         />
         <PaginationBar />
       </TableCard>
-
-      {/* Responsive View Modal */}
-      <AssessmentViewModal record={viewRecord} onClose={clearModals} />
     </div>
   );
 }

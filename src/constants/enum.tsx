@@ -21,6 +21,7 @@ export const ROUTE_PATHS = {
   PENDING_ASSESSMENTS: "/dashboard/pending-assessments",
   ASSESSMENT: "/dashboard/pending-assessments/assessment/:id",
   ASSESSMENT_TRACKING: "/dashboard/assessment-tracking",
+  ASSESSMENT_TRACKING_VIEW: "/dashboard/assessment-tracking/view/:id",
   SUPERVISOR_APPROVAL: "/dashboard/supervisor-approval",
   SUPERVISOR_REVIEW: "/dashboard/supervisor-approval/review/:id",
   TRUEIN_SYNC: "/dashboard/truein-sync",
