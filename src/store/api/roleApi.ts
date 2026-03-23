@@ -1,31 +1,14 @@
-// ─────────────────────────────────────────────
-// FILE: src/store/api/roleApi.ts
-//
-// Endpoints from Postman → roles folder:
-//   GET  /roles                  → getRoles (paginated + filtered)
-//   GET  /roles?groupBy=roleType → getRolesGrouped
-//   POST /roles/custom           → createCustomRole
-//
-// CACHE:
-//   createCustomRole → auto refetches both list + grouped
-//
-// USAGE:
-//   const { data } = useGetRolesQuery({ page: 1, limit: 10 });
-//   const { data: grouped } = useGetRolesGroupedQuery();
-//   const [createRole] = useCreateCustomRoleMutation();
-// ─────────────────────────────────────────────
-
 import { baseApi, type ApiResponse, type PaginatedResponse } from "../baseApi";
 
 // ── Types (specific to roles) ────────────────
-
 export interface RoleResponse {
-  id: number;
-  roleName: string;
+  id: number | string;
+  roleName?: string;
+  name?: string;
   roleType: "PRIMARY" | "CUSTOM";
   isSystemRole: boolean;
   isLocked: boolean;
-  permissions: { id: number; permissionKey: string; label: string; group: string }[];
+  permissions: { id: number; permissionKey: string; label: string; group: string }[] | string[];
   userCount: number;
   createdAt: string;
   updatedAt: string;
@@ -49,33 +32,32 @@ export interface CreateCustomRoleRequest {
 }
 
 // ── Endpoints ────────────────────────────────
-
 export const roleApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
 
-    // GET /roles?page=...&limit=...&search=...&roleType=...&sortBy=...
-    getRoles: builder.query<PaginatedResponse<RoleResponse>, GetRolesParams>({
+    getRoles: builder.query<any, GetRolesParams>({
       query: (params) => ({
         url: "/roles",
         params,
       }),
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.data.map(({ id }) => ({
-                type: "Role" as const,
-                id,
-              })),
-              { type: "Role", id: "LIST" },
-            ]
-          : [{ type: "Role", id: "LIST" }],
+      providesTags: (result) => {
+        let list: any[] = [];
+        if (Array.isArray(result)) list = result;
+        else if (result?.data && Array.isArray(result.data)) list = result.data;
+        else if (result?.data?.data && Array.isArray(result.data.data)) list = result.data.data;
+
+        return [
+          ...list.map(({ id }: any) => ({
+            type: "Role" as const,
+            id: String(id),
+          })),
+          { type: "Role", id: "LIST" },
+        ];
+      },
     }),
 
     // GET /roles?groupBy=roleType
-    getRolesGrouped: builder.query<
-      ApiResponse<Record<string, RoleResponse[]>>,
-      void
-    >({
+    getRolesGrouped: builder.query<ApiResponse<Record<string, RoleResponse[]>>, void>({
       query: () => ({
         url: "/roles",
         params: { groupBy: "roleType" },
@@ -84,10 +66,7 @@ export const roleApi = baseApi.injectEndpoints({
     }),
 
     // POST /roles/custom
-    createCustomRole: builder.mutation<
-      ApiResponse<RoleResponse>,
-      CreateCustomRoleRequest
-    >({
+    createCustomRole: builder.mutation<ApiResponse<RoleResponse>, CreateCustomRoleRequest>({
       query: (body) => ({
         url: "/roles/custom",
         method: "POST",
