@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
     PlusIcon,
@@ -8,6 +8,7 @@ import {
     UsersIcon,
     CalendarIcon,
     PencilIcon,
+    Loader2Icon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -18,18 +19,20 @@ import SearchFilterBar from "@/components/search-filter-bar";
 import type { ColumnDef, RowAction } from "@/types/table";
 
 import { useToast } from "@/components/toast-notification";
-import { usePagination } from "@/components/table-pagination"; // <-- 1. Imported Pagination
+import { usePagination } from "@/components/table-pagination";
 
 import CreateRoleWizard from "./components/create-role-wizard";
 import RoleViewModal from "./components/role-view-modal";
 import EditRoleModal from "./components/edit-role-modal";
 
-import { MOCK_CUSTOM_ROLES } from "@/mockdata/custom-roles";
 import type { CustomRole, CustomRoleFormData } from "./types";
 import { ROLE_MESSAGES } from "@/constants/messages";
 import { ConfirmationModal } from "@/components/common/confirmation-modal";
 
+import { useGetRolesQuery } from "@/store/api/roleApi";
+
 function formatDate(iso: string) {
+    if (!iso) return "N/A";
     return new Date(iso).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
@@ -41,9 +44,46 @@ export default function CustomRolesPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const toast = useToast();
 
-    const [roles, setRoles] = useState<CustomRole[]>(MOCK_CUSTOM_ROLES);
+    // ── 1. Fetch data from RTK Query ──
+    const queryParams = useMemo(() => ({ limit: 100 }), []);
+    const { data: apiResponse, isLoading, isFetching, isError } = useGetRolesQuery(queryParams);
+
+    const [roles, setRoles] = useState<CustomRole[]>([]);
     const [search, setSearch] = useState("");
     const [dateFilter, setDateFilter] = useState("all");
+
+    // ── 2. Safely Synchronize API data with Local State ──
+    useEffect(() => {
+        if (!apiResponse) return;
+
+        // Extract the array no matter how the backend wraps it
+        let rawRoles: any[] = [];
+        if (Array.isArray(apiResponse)) rawRoles = apiResponse;
+        else if (apiResponse?.data && Array.isArray(apiResponse.data)) rawRoles = apiResponse.data;
+        else if (apiResponse?.data?.data && Array.isArray(apiResponse.data.data)) rawRoles = apiResponse.data.data;
+
+        if (rawRoles.length > 0) {
+            const mappedRoles: CustomRole[] = rawRoles.map((r: any) => ({
+                id: String(r.id),
+                roleName: r.roleName || r.name || "Unnamed Role",
+                // Map the user count into mock avatars for the table
+                assignedEmployees: Array.from({ length: r.userCount || 0 }).map((_, i) => ({
+                    id: `dummy-${r.id}-${i}`,
+                    empId: `EMP-${i}`,
+                    fullName: "Assigned User",
+                    primaryRole: "EMPLOYEE" as any,
+                })),
+                // Map complex permission objects to strings
+                permissions: r.permissions?.map((p: any) => p.permissionKey || p.label || String(p)) || [],
+                createdBy: "System",
+                createdAt: r.createdAt || new Date().toISOString(),
+            }));
+            
+            setRoles(mappedRoles);
+        } else {
+            setRoles([]); 
+        }
+    }, [apiResponse]);
 
     // ── URL Driven Modal States ──
     const isCreateOpen = searchParams.get("createRole") === "true";
@@ -127,9 +167,9 @@ export default function CustomRolesPage() {
             hideBelow: "lg",
             render: (r) => (
                 <div className="flex flex-wrap gap-1.5 max-w-[240px]">
-                    {r.permissions.slice(0, 2).map((p) => (
+                    {r.permissions.slice(0, 2).map((p, i) => (
                         <span
-                            key={p}
+                            key={i}
                             className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-secondary/50 text-secondary-foreground rounded-md border border-border/50 transition-all hover:bg-secondary hover:shadow-sm"
                         >
                             {p}
@@ -225,15 +265,13 @@ export default function CustomRolesPage() {
             createdBy: "Admin User",
             createdAt: new Date().toISOString().split("T")[0],
         };
-        setRoles((prev) => [...prev, newRole]);
+        setRoles((prev) => [newRole, ...prev]);
         clearModals();
         toast.success("Custom role created successfully.");
     }
 
     function handleEditSave(updatedRole: CustomRole) {
-        setRoles((prev) =>
-            prev.map((r) => (r.id === updatedRole.id ? updatedRole : r)),
-        );
+        setRoles((prev) => prev.map((r) => (r.id === updatedRole.id ? updatedRole : r)));
         clearModals();
         toast.success("Custom role updated successfully.");
     }
@@ -242,24 +280,22 @@ export default function CustomRolesPage() {
         if (!deleteRoleData) return;
         setRoles((prev) => prev.filter((r) => r.id !== deleteRoleData.id));
         clearModals();
-        if (toast.deleted) toast.deleted("Custom role deleted successfully.");
-        else toast.success("Custom role deleted successfully.");
+        toast.success("Custom role deleted successfully.");
     }
+
+    // Safely combine isLoading and isFetching
+    const loadingState = isLoading || isFetching;
+    
+    const emptyMessage = loadingState 
+        ? <span className="flex items-center gap-2"><Loader2Icon className="w-4 h-4 animate-spin"/> Loading roles...</span>
+        : isError 
+        ? "Failed to load roles." 
+        : "No custom roles found.";
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <PageHeader
-                title="Custom Roles"
-                subtitle="Define and manage custom permission roles for employees"
-            >
-                <Button
-                    size="sm"
-                    className="gap-2 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
-                    onClick={() => {
-                        searchParams.set("createRole", "true");
-                        setSearchParams(searchParams);
-                    }}
-                >
+            <PageHeader title="Custom Roles" subtitle="Define and manage custom permission roles for employees">
+                <Button size="sm" className="gap-2 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5" onClick={() => { searchParams.set("createRole", "true"); setSearchParams(searchParams); }}>
                     <PlusIcon className="w-4 h-4" /> Create Custom Role
                 </Button>
             </PageHeader>
@@ -274,59 +310,26 @@ export default function CustomRolesPage() {
                         onSearchChange={setSearch}
                         searchPlaceholder="Search by role or permission..."
                         filters={[
-                            {
-                                value: dateFilter,
-                                onChange: setDateFilter,
-                                placeholder: "Filter by date",
-                                width: "sm:w-44",
-                                options: [
-                                    { value: "all", label: "All Time" },
-                                    { value: "this_month", label: "This Month" },
-                                    { value: "last_3_months", label: "Last 3 Months" },
-                                ],
-                            },
+                            { value: dateFilter, onChange: setDateFilter, placeholder: "Filter by date", width: "sm:w-44", options: [ { value: "all", label: "All Time" }, { value: "this_month", label: "This Month" }, { value: "last_3_months", label: "Last 3 Months" } ] },
                         ]}
                     />
                 }
             >
-                {/* 3. Pass paginated data instead of filteredRoles */}
-                <DataTable
-                    columns={ROLE_COLUMNS}
-                    data={paginated}
-                    actions={rowActions}
-                    emptyMessage="No custom roles found."
-                />
-
-                {/* 4. Render PaginationBar at the bottom */}
+                <DataTable columns={ROLE_COLUMNS} data={paginated} actions={rowActions} emptyMessage={emptyMessage as any} />
                 <PaginationBar />
             </TableCard>
 
-            <CreateRoleWizard
-                open={isCreateOpen}
-                existingRoleNames={roles.map((r) => r.roleName)}
-                onClose={clearModals}
-                onSubmit={handleCreate}
-            />
+            <CreateRoleWizard open={isCreateOpen} existingRoleNames={roles.map((r) => r.roleName)} onClose={clearModals} onSubmit={handleCreate} />
             <RoleViewModal role={viewRoleData} onClose={clearModals} />
-            <EditRoleModal
-                isOpen={!!editRoleData}
-                role={editRoleData}
-                onSave={handleEditSave}
-                onClose={clearModals}
-            />
+            <EditRoleModal isOpen={!!editRoleData} role={editRoleData} onSave={handleEditSave} onClose={clearModals} />
+            
             <ConfirmationModal
                 variant="danger"
                 open={!!deleteRoleData}
                 onClose={clearModals}
                 onConfirm={handleDelete}
                 title={ROLE_MESSAGES.DELETE_CONFIRM_TITLE || "Delete Custom Role"}
-                message={
-                    deleteRoleData
-                        ? ROLE_MESSAGES.DELETE_CONFIRM_DESC
-                            ? ROLE_MESSAGES.DELETE_CONFIRM_DESC(deleteRoleData.roleName)
-                            : `Are you sure you want to delete ${deleteRoleData.roleName}?`
-                        : ""
-                }
+                message={deleteRoleData ? `Are you sure you want to delete ${deleteRoleData.roleName}?` : ""}
                 confirmText="Delete Role"
             />
         </div>
