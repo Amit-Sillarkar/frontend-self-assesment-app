@@ -31,6 +31,12 @@ export interface CreateCustomRoleRequest {
   permissionIds: number[];
 }
 
+export interface UpdateCustomRoleRequest {
+  roleId: number;
+  roleName?: string;
+  permissionIds?: number[];
+}
+
 // ── Endpoints ────────────────────────────────
 export const roleApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -77,6 +83,33 @@ export const roleApi = baseApi.injectEndpoints({
         { type: "Role", id: "GROUPED" },
       ],
     }),
+
+    // PATCH /roles/custom/:roleId
+    updateCustomRole: builder.mutation<ApiResponse<RoleResponse>, UpdateCustomRoleRequest>({
+      query: ({ roleId, ...body }) => ({
+        url: `/roles/custom/${roleId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { roleId }) => [
+        { type: "Role", id: String(roleId) },
+        { type: "Role", id: "LIST" },
+        { type: "Role", id: "GROUPED" },
+      ],
+    }),
+
+    // DELETE /roles/custom/:roleId
+    deleteCustomRole: builder.mutation<ApiResponse<{ deletedRoleId: number; roleName: string }>, number>({
+      query: (roleId) => ({
+        url: `/roles/custom/${roleId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, roleId) => [
+        { type: "Role", id: String(roleId) },
+        { type: "Role", id: "LIST" },
+        { type: "Role", id: "GROUPED" },
+      ],
+    }),
   }),
 });
 
@@ -84,4 +117,6 @@ export const {
   useGetRolesQuery,
   useGetRolesGroupedQuery,
   useCreateCustomRoleMutation,
+  useUpdateCustomRoleMutation,
+  useDeleteCustomRoleMutation,
 } = roleApi;

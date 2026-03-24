@@ -15,7 +15,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { useLoginMutation } from "@/store/api/authApi";
+import { useLoginMutation, useLogoutMutation } from "@/store/api/authApi";
 
 interface User {
   id: string;
@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loginMutation] = useLoginMutation();
+  const [logoutMutation] = useLogoutMutation();
 
   // On mount: restore session from localStorage
   useEffect(() => {
@@ -64,8 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  // Logout: clear everything → redirect
+  // Logout: call backend (clears httpOnly cookie) → clear localStorage → redirect
   const logout = async () => {
+    try {
+      await logoutMutation().unwrap();
+    } catch {
+      // ignore — clear locally regardless of server response
+    }
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
     setUser(null);

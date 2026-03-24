@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { MOCK_USERS } from "@/mockdata/users";
+import { useAuth } from "@/context/AuthContext";
 
 // Dropdown UI
 import {
@@ -31,11 +32,7 @@ interface HeaderProps {
 export default function Header({ title, subtitle, onMenuToggle }: HeaderProps) {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const profileData = MOCK_USERS[0];
-
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    window.location.href = "/login";
-  };
+  const { logout } = useAuth();
 
   return (
     <>
@@ -92,7 +89,7 @@ export default function Header({ title, subtitle, onMenuToggle }: HeaderProps) {
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={handleLogout}
+                onClick={logout}
                 className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/50"
               >
                 <LogOut className="mr-2 h-4 w-4" />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ShieldCheckIcon, CheckCircle2Icon } from "lucide-react";
+import { ShieldCheckIcon, CheckCircle2Icon, Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import type { CustomRole } from "../types";
+import { useUpdateCustomRoleMutation } from "@/store/api/roleApi";
 
 // Mock permissions for the UI
 const AVAILABLE_PERMISSIONS = [
@@ -29,13 +30,15 @@ export default function EditRoleModal({ isOpen, role, onClose, onSave }: EditRol
     const [roleName, setRoleName] = useState("");
     const [permissions, setPermissions] = useState<string[]>([]);
 
+    const [updateCustomRole, { isLoading: isSaving }] = useUpdateCustomRoleMutation();
+
     // ── Load Data & Drafts on Open ────────────────────────
     useEffect(() => {
         if (isOpen && role) {
             // Check if there is an unsaved draft in local storage
             const draftKey = `draft_role_${role.id}`;
             const savedDraft = localStorage.getItem(draftKey);
-            
+
             if (savedDraft) {
                 const parsed = JSON.parse(savedDraft);
                 setRoleName(parsed.roleName);
@@ -62,12 +65,20 @@ export default function EditRoleModal({ isOpen, role, onClose, onSave }: EditRol
         );
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!role) return;
-        onSave({ ...role, roleName, permissions });
-        // Clear draft on successful save
-        localStorage.removeItem(`draft_role_${role.id}`);
-        onClose();
+        try {
+            await updateCustomRole({
+                roleId: parseInt(role.id, 10),
+                roleName: roleName.trim(),
+            }).unwrap();
+
+            onSave({ ...role, roleName: roleName.trim(), permissions });
+            localStorage.removeItem(`draft_role_${role.id}`);
+            onClose();
+        } catch (err) {
+            console.error("Failed to update custom role:", err);
+        }
     };
 
     const handleCancel = () => {
@@ -84,10 +95,10 @@ export default function EditRoleModal({ isOpen, role, onClose, onSave }: EditRol
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
             <DialogContent className="sm:max-w-[700px] w-[95vw] h-[85vh] flex flex-col p-0 overflow-hidden bg-background border-border/60 shadow-xl">
-                
+
                 {/* ── Fixed Header ── */}
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-border bg-card relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary/40" />                    
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary/40" />
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                             <ShieldCheckIcon className="w-5 h-5 text-primary" />
@@ -161,16 +172,24 @@ export default function EditRoleModal({ isOpen, role, onClose, onSave }: EditRol
                     <Button
                         variant="outline"
                         onClick={handleCancel}
+                        disabled={isSaving}
                         className="border-border text-foreground hover:bg-muted"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSave}
-                        disabled={!roleName.trim() || permissions.length === 0}
+                        disabled={!roleName.trim() || permissions.length === 0 || isSaving}
                         className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg transition-all"
                     >
-                        Save Changes
+                        {isSaving ? (
+                            <>
+                                <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            "Save Changes"
+                        )}
                     </Button>
                 </div>
             </DialogContent>
