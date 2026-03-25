@@ -173,7 +173,7 @@ export default function SupervisorReviewPage() {
                 variant="success"
                 open={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
-                onConfirm={() => handleSubmit()}
+                onConfirm={() => handlePreSubmit()}
                 title="Finalize Evaluation"
                 message={`You are about to submit your final review for ${review.employeeName}. This action cannot be undone.`}
                 confirmText="Approve Evaluation"

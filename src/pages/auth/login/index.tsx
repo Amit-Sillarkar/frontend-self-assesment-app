@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { APP_NAME, APP_DESCRIPTION } from "@/constants";
 import { AUTH_MESSAGES } from "@/constants/messages";
 import { ROUTE_PATHS } from "@/constants/enum";
 import { useAuth } from "@/context/AuthContext";
@@ -33,7 +32,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
-
     try {
       await login(email, password);
       navigate(ROUTE_PATHS.DASHBOARD);
@@ -50,7 +48,6 @@ export default function LoginPage() {
       <div className="hidden md:flex md:w-1/2 bg-muted/30 items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-
         <div className="relative z-10 text-center space-y-6 max-w-md">
           <img
             src={logo}

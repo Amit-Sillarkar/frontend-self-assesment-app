@@ -41,8 +41,19 @@ export const USER_MESSAGES = {
   DELETE_SUCCESS: "User deleted successfully.",
   CREATE_SUCCESS: "User created successfully.",
   UPDATE_SUCCESS: "User updated successfully.",
-  SYNC_SUCCESS: "Data synced successfully.",
+  SYNC_SUCCESS:   "Data synced successfully.",
   IMPORT_SUCCESS: "Users imported successfully.",
+  CREATE_FAILED: "Failed to create user. Please try again.",
+  UPDATE_FAILED: "Failed to update user. Please try again.",
+  SYNC_FAILED: "Failed to sync data. Please try again.",
+  IMPORT_FAILED: "Failed to import users. Please check the file and try again.",
+  DELETE_FAILED: "Failed to delete user. Please try again.",
+  USER_ACTIVATED_SUCCESS: "User activated successfully.",
+  USER_DEACTIVATED_SUCCESS: "User deactivated successfully.",
+  USER_ACTIVATION_FAILED: "Failed to change user status. Please try again.",
+  USER_CREATION_INPROGRESS: "Creating user...",
+  USER_UPDATE_INPROGRESS: "Updating user...",
+  USER_FETCH_FAILED: "Failed to load user data. Please try again.",
 };
 
 export const ROLE_MESSAGES = {
