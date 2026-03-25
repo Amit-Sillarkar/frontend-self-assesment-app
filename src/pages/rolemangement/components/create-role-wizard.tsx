@@ -1,37 +1,31 @@
 import { useState, useEffect } from "react";
-import { ChevronRightIcon, ChevronLeftIcon, ShieldPlusIcon } from "lucide-react";
+import { ChevronRightIcon, ChevronLeftIcon, ShieldPlusIcon, Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import WizardStepper from "./wizard-stepper";
 import Step1DefineRole from "./step1-define-role";
 import Step2SelectEmployees from "./step2-select-employees";
 import Step3SetPermissions from "./step3-set-permissions";
 
-import type { PermissionKey } from "@/constants/enum";
 import { ROLE_MESSAGES } from "@/constants/messages";
 import type { CustomRoleFormData } from "../types";
 
 const EMPTY: CustomRoleFormData = {
   roleName: "",
   assignedEmployeeIds: [],
-  permissions: [],
+  permissionIds: [], 
 };
 
 interface Props {
   open: boolean;
   existingRoleNames: string[];
+  isSubmitting?: boolean;
   onClose: () => void;
   onSubmit: (data: CustomRoleFormData) => void;
 }
 
-export default function CreateRoleWizard({ open, existingRoleNames, onClose, onSubmit }: Props) {
+export default function CreateRoleWizard({ open, existingRoleNames, isSubmitting, onClose, onSubmit }: Props) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<CustomRoleFormData>(EMPTY);
   const [errors, setErrors] = useState({ step1: "", step2: "", step3: "" });
@@ -41,7 +35,12 @@ export default function CreateRoleWizard({ open, existingRoleNames, onClose, onS
           const savedDraft = localStorage.getItem("draft_create_custom_role");
           if (savedDraft) {
               const parsed = JSON.parse(savedDraft);
-              setForm(parsed.form);
+              // Merge with EMPTY to ensure arrays are never undefined
+              setForm({
+                  roleName: parsed.form?.roleName || "",
+                  assignedEmployeeIds: parsed.form?.assignedEmployeeIds || [],
+                  permissionIds: parsed.form?.permissionIds || [],
+              });
               setStep(parsed.step || 1);
           } else {
               setForm(EMPTY);
@@ -52,7 +51,7 @@ export default function CreateRoleWizard({ open, existingRoleNames, onClose, onS
   }, [open]);
 
   useEffect(() => {
-      if (open && (form.roleName || form.assignedEmployeeIds.length > 0 || form.permissions.length > 0)) {
+      if (open && (form.roleName || form.assignedEmployeeIds?.length > 0 || form.permissionIds?.length > 0)) {
           localStorage.setItem("draft_create_custom_role", JSON.stringify({ form, step }));
       }
   }, [form, step, open]);
@@ -80,7 +79,7 @@ export default function CreateRoleWizard({ open, existingRoleNames, onClose, onS
   }
 
   function validateStep3(): boolean {
-    if (form.permissions.length === 0) {
+    if (form.permissionIds.length === 0) {
       setErrors((e) => ({ ...e, step3: ROLE_MESSAGES.STEP3_INCOMPLETE }));
       return false;
     }
@@ -108,10 +107,7 @@ export default function CreateRoleWizard({ open, existingRoleNames, onClose, onS
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      {/* Locked height to h-[85vh] to force inner scrolling */}
       <DialogContent className="sm:max-w-[650px] w-[95vw] h-[85vh] flex flex-col p-0 overflow-hidden bg-background border-border/60 shadow-xl">
-        
-        {/* ── Fixed Header ── */}
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-border bg-card relative overflow-hidden shrink-0">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary/40" />
           <div className="flex items-center gap-3">
@@ -125,21 +121,16 @@ export default function CreateRoleWizard({ open, existingRoleNames, onClose, onS
           </div>
         </DialogHeader>
 
-        {/* ── Fixed Stepper ── */}
         <div className="px-5 pt-5 pb-2 shrink-0 flex justify-center w-full bg-background">
-          <div className="w-full max-w-md">
-            <WizardStepper currentStep={step} />
-          </div>
+          <div className="w-full max-w-md"><WizardStepper currentStep={step} /></div>
         </div>
 
-        {/* ── Dynamic Step Content Area (Handles inner scroll) ── */}
         <div className="flex-1 min-h-0 px-5 pb-5 flex flex-col">
           {step === 1 && <Step1DefineRole roleName={form.roleName} onChange={(v) => setForm((f) => ({ ...f, roleName: v }))} error={errors.step1} />}
           {step === 2 && <Step2SelectEmployees selected={form.assignedEmployeeIds} onChange={(ids) => setForm((f) => ({ ...f, assignedEmployeeIds: ids }))} error={errors.step2} />}
-          {step === 3 && <Step3SetPermissions selected={form.permissions as PermissionKey[]} onChange={(perms) => setForm((f) => ({ ...f, permissions: perms }))} error={errors.step3} />}
+          {step === 3 && <Step3SetPermissions selected={form.permissionIds} onChange={(perms) => setForm((f) => ({ ...f, permissionIds: perms }))} error={errors.step3} />}
         </div>
 
-        {/* ── Fixed Footer ── */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-card shrink-0">
           <Button variant="outline" size="sm" onClick={step === 1 ? onClose : handleBack} className="h-8 border-border text-xs text-foreground hover:bg-muted shadow-sm transition-all">
             {step === 1 ? "Cancel" : <span className="flex items-center gap-1"><ChevronLeftIcon className="w-3.5 h-3.5" /> Back</span>}
@@ -151,8 +142,20 @@ export default function CreateRoleWizard({ open, existingRoleNames, onClose, onS
                 Next <ChevronRightIcon className="w-3.5 h-3.5" />
               </Button>
             ) : (
-              <Button size="sm" onClick={handleAssign} disabled={form.permissions.length === 0} className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all">
-                Assign Role
+              <Button 
+                size="sm" 
+                onClick={handleAssign} 
+                disabled={form.permissionIds.length === 0 || isSubmitting}
+                className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
+              >
+                {isSubmitting ? (
+                   <>
+                     <Loader2Icon className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                     Assigning...
+                   </>
+                ) : (
+                   "Assign Role"
+                )}
               </Button>
             )}
           </div>

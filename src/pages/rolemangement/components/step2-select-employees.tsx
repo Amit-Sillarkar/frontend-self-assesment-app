@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
-import { SearchIcon, UsersIcon, CheckCircle2Icon, UserCircleIcon } from "lucide-react";
+import { SearchIcon, UsersIcon, CheckCircle2Icon, UserCircleIcon, Loader2Icon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-// Make sure this path points to your actual users/employees mock data
-import { MOCK_USERS } from "@/mockdata/users"; 
+import { useGetUsersQuery } from "@/store/api/userApi";
 
 interface Props {
   selected: string[];
@@ -12,13 +11,26 @@ interface Props {
 
 export default function Step2SelectEmployees({ selected, onChange, error }: Props) {
   const [search, setSearch] = useState("");
+  
+  const { data, isLoading } = useGetUsersQuery({ 
+      roleNames: "SUPERVISOR", 
+  });
+
+    const users = useMemo(() => {
+        if (!data) return [];
+        const res = data as any;
+
+        if (Array.isArray(res?.data?.data)) return res.data.data;
+        if (Array.isArray(res?.data)) return res.data;
+        return Array.isArray(res) ? res : [];
+    }, [data]);
 
   const filtered = useMemo(() => {
-    return MOCK_USERS.filter(u => 
-        u.fullName.toLowerCase().includes(search.toLowerCase()) || 
-        u.empId.toLowerCase().includes(search.toLowerCase())
+    return users.filter((u: any) => 
+        u.fullName?.toLowerCase().includes(search.toLowerCase()) || 
+        u.employeeId?.toLowerCase().includes(search.toLowerCase())
     );
-  }, [search]);
+  }, [search, users]);
 
   const toggle = (id: string) => {
     if (selected.includes(id)) onChange(selected.filter((x) => x !== id));
@@ -27,20 +39,18 @@ export default function Step2SelectEmployees({ selected, onChange, error }: Prop
 
   const toggleAll = () => {
     if (selected.length === filtered.length && filtered.length > 0) onChange([]);
-    else onChange(filtered.map(f => f.id));
-  }
+    else onChange(filtered.map((f: any) => f.id));
+  };
 
   return (
     <div className="flex flex-col h-full space-y-4 animate-in fade-in duration-300 min-h-0">
-      
-      {/* Fixed Header & Search */}
       <div className="shrink-0 space-y-3">
         <div className="flex items-center justify-between">
             <div>
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                    <UsersIcon className="w-4 h-4 text-primary" /> Select Employees
+                    <UsersIcon className="w-4 h-4 text-primary" /> Select Supervisors
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Choose who will be assigned this role.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Choose which supervisors will be assigned this role.</p>
                 {error && <p className="text-xs text-destructive mt-1 font-medium">{error}</p>}
             </div>
             <span className="text-[10px] font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full uppercase tracking-wider">
@@ -59,9 +69,7 @@ export default function Step2SelectEmployees({ selected, onChange, error }: Prop
         </div>
       </div>
 
-      {/* Internal Scrollable Employee List */}
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar border border-border/60 rounded-xl bg-card shadow-sm divide-y divide-border/40">
-        
         <button onClick={toggleAll} className="w-full flex items-center justify-between p-3 bg-muted/30 hover:bg-muted/60 transition-colors text-left">
             <span className="text-xs font-bold text-foreground">Select All Filtered</span>
             <div className={`w-4 h-4 rounded-full flex items-center justify-center border-2 transition-colors ${selected.length === filtered.length && filtered.length > 0 ? "bg-primary border-primary" : "border-border"}`}>
@@ -69,10 +77,14 @@ export default function Step2SelectEmployees({ selected, onChange, error }: Prop
             </div>
         </button>
 
-        {filtered.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground">No employees found matching your search.</div>
+        {isLoading ? (
+            <div className="flex items-center justify-center py-10 text-xs text-muted-foreground gap-2">
+                <Loader2Icon className="w-4 h-4 animate-spin text-primary" /> Loading supervisors...
+            </div>
+        ) : filtered.length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">No matching supervisors found.</div>
         ) : (
-            filtered.map((emp) => {
+            filtered.map((emp: any) => {
                 const isChecked = selected.includes(emp.id);
                 return (
                     <button
@@ -86,7 +98,7 @@ export default function Step2SelectEmployees({ selected, onChange, error }: Prop
                             </div>
                             <div>
                                 <p className={`text-xs font-semibold ${isChecked ? "text-foreground" : "text-muted-foreground"}`}>{emp.fullName}</p>
-                                <p className="text-[10px] text-muted-foreground font-mono">{emp.empId}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono">{emp.employeeId || "N/A"}</p>
                             </div>
                         </div>
                         <div className={`w-4 h-4 rounded-full flex items-center justify-center border-2 transition-colors ${isChecked ? "bg-primary border-primary shadow-sm" : "border-border"}`}>
