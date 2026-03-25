@@ -99,9 +99,11 @@ export default function UserFormModal({ open, mode, initialData, onClose, onSubm
 
   const isEdit = mode === "edit";
   const userRoleName = initialData?.roleDefinition?.name?.toLowerCase() || "";
-  const isPrimary = userRoleName.includes("user") && !userRoleName.includes("supervisor") && !userRoleName.includes("manager");
+  const isUser = userRoleName.includes("user")
   const isSupervisor = userRoleName.includes("supervisor");
   const isManager = userRoleName.includes("manager");
+
+  console.log(isUser, isSupervisor, isManager);
 
   useEffect(() => {
     if (!open) return;
@@ -243,72 +245,74 @@ export default function UserFormModal({ open, mode, initialData, onClose, onSubm
             <FormField label="Primary Role">
               <Input
                 value={initialData?.roleDefinition?.name ?? "USER"}
-                disabled={isEdit && (isPrimary || isSupervisor || isManager)}
+                disabled={isEdit && (isUser || isSupervisor || isManager)}
               />
             </FormField>
 
-            <FormField label="Custom Roles">
-              <div className="flex flex-col gap-2">
-                <Popover open={openCustomRoleSearch} onOpenChange={setOpenCustomRoleSearch}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between font-normal min-h-10 h-auto"
-                    >
-                      <span className="truncate">
-                        {Array.isArray(form.customRoleId) && form.customRoleId.length > 0
-                          ? `${form.customRoleId.length} role(s) selected`
-                          : "Select custom roles..."}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-75 p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search roles..." />
-                      <CommandEmpty>No roles found.</CommandEmpty>
-                      <CommandGroup className="max-h-60 overflow-y-auto">
-                        {customRoles?.data?.data?.map((role: CustomRole) => {
-                          const isSelected = Array.isArray(form.customRoleId) &&
-                            form.customRoleId.some((r: CustomRole) => r.id === role.id);
-                          return (
-                            <CommandItem
-                              key={role.id}
-                              value={String(role.id)}
-                              onSelect={() => toggleCustomRole({ id: role.id, name: role.name })}
-                            >
-                              <div className={cn(
-                                "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                isSelected ? "bg-primary text-primary-foreground" : "opacity-50"
-                              )}>
-                                {isSelected && <Check className="h-3 w-3" />}
-                              </div>
-                              <span>{role.name}</span>
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <div className="flex flex-wrap gap-1">
-                  {Array.isArray(form.customRoleId) && form.customRoleId.map((roleObj: CustomRole) => (
-                    <Badge key={roleObj.id} variant="secondary" className="gap-1 pr-1">
-                      {roleObj.name}
+            {!isUser && (
+              <FormField label="Custom Roles">
+                <div className="flex flex-col gap-2">
+                  <Popover open={openCustomRoleSearch} onOpenChange={setOpenCustomRoleSearch}>
+                    <PopoverTrigger asChild>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="ml-1 h-5 w-5 rounded-full p-0 text-muted-foreground hover:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        onClick={() => toggleCustomRole(roleObj)}
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between font-normal min-h-10 h-auto"
                       >
-                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                        <span className="truncate">
+                          {Array.isArray(form.customRoleId) && form.customRoleId.length > 0
+                            ? `${form.customRoleId.length} role(s) selected`
+                            : "Select custom roles..."}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
-                    </Badge>
-                  ))}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-75 p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search roles..." />
+                        <CommandEmpty>No roles found.</CommandEmpty>
+                        <CommandGroup className="max-h-60 overflow-y-auto">
+                          {customRoles?.data?.data?.map((role: CustomRole) => {
+                            const isSelected = Array.isArray(form.customRoleId) &&
+                              form.customRoleId.some((r: CustomRole) => r.id === role.id);
+                            return (
+                              <CommandItem
+                                key={role.id}
+                                value={String(role.id)}
+                                onSelect={() => toggleCustomRole({ id: role.id, name: role.name })}
+                              >
+                                <div className={cn(
+                                  "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                  isSelected ? "bg-primary text-primary-foreground" : "opacity-50"
+                                )}>
+                                  {isSelected && <Check className="h-3 w-3" />}
+                                </div>
+                                <span>{role.name}</span>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <div className="flex flex-wrap gap-1">
+                    {Array.isArray(form.customRoleId) && form.customRoleId.map((roleObj: CustomRole) => (
+                      <Badge key={roleObj.id} variant="secondary" className="gap-1 pr-1">
+                        {roleObj.name}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="ml-1 h-5 w-5 rounded-full p-0 text-muted-foreground hover:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                          onClick={() => toggleCustomRole(roleObj)}
+                        >
+                          <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                        </Button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </FormField>
+              </FormField>
+            )}
 
             <FormField
               label={isManager ? "Assigned Supervisor" : "Reporting Supervisor"}
@@ -321,7 +325,7 @@ export default function UserFormModal({ open, mode, initialData, onClose, onSubm
                     variant="outline"
                     role="combobox"
                     className={cn("w-full justify-between font-normal", !form.reportingSupervisorId && "text-muted-foreground")}
-                    disabled={isEdit && isPrimary}
+                    disabled={isEdit && isUser}
                   >
                     {form.reportingSupervisorId
                       ? supervisors?.data.find((u: User) => u.id === form.reportingSupervisorId)?.fullName
@@ -375,7 +379,7 @@ export default function UserFormModal({ open, mode, initialData, onClose, onSubm
                 <Input
                   value={form.reportingManagerId ?? ""}
                   onChange={(e) => handleChange("reportingManagerId", e.target.value || null)}
-                  disabled={isEdit && (isPrimary || isManager)}
+                  disabled={isEdit && (isUser || isManager)}
                 />
               )}
             </FormField>

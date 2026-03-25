@@ -16,6 +16,7 @@ import TrueinSyncPage from "@/pages/truein-sync";
 import AssessmentTrackingViewPage from "@/pages/assessment-tracking/components/view";
 import NotFoundPage from "@/pages/pagenotfound";
 import NotAuthorizedPage from "@/pages/unauthorized";
+import ProtectedRoute from "./ProtectedRoute";
 
 // ─────────────────────────────────────────────
 // PRIVATE ROUTES
@@ -23,22 +24,24 @@ import NotAuthorizedPage from "@/pages/unauthorized";
 // ─────────────────────────────────────────────
 
 export const privateRoutes = (
-  <Route path={ROUTE_PATHS.DASHBOARD} element={<DashboardLayout />}>
-    <Route index element={<DashboardPage />} />
-    <Route path={ROUTE_PATHS.COLORS} element={<ColorsPage />} />
-    <Route path={ROUTE_PATHS.COMPONENTS} element={<ComponentsPage />} />
-    <Route path={ROUTE_PATHS.USER_MANAGEMENT} element={<UserManagementPage />} />
-    <Route path={ROUTE_PATHS.CUSTOM_ROLES}    element={<CustomRolesPage />} />
-    <Route path={ROUTE_PATHS.ASSESSMENT_BUILDER} element={<AssessmentBuilderPage />} />
-    {/* Assessment Routes */}
-    <Route path={ROUTE_PATHS.PENDING_ASSESSMENTS} element={<PendingAssessmentsPage />} />
-    <Route path={ROUTE_PATHS.ASSESSMENT} element={<AssessmentPage />} />
-    <Route path={ROUTE_PATHS.ASSESSMENT_TRACKING} element={<AssessmentTrackingPage />} />
-    <Route path={ROUTE_PATHS.ASSESSMENT_TRACKING_VIEW} element={<AssessmentTrackingViewPage />} />
-    <Route path={ROUTE_PATHS.SUPERVISOR_APPROVAL} element={<SupervisorApprovalListPage />} />
-    <Route path={ROUTE_PATHS.SUPERVISOR_REVIEW} element={<SupervisorReviewPage />} />
-    <Route path={ROUTE_PATHS.TRUEIN_SYNC} element={<TrueinSyncPage />} />
-    <Route path="*" element={<NotFoundPage />} />
-    <Route path={ROUTE_PATHS.UNAUTHORIZED} element={<NotAuthorizedPage />} />
+  <Route element={<ProtectedRoute />}>  
+    <Route path={ROUTE_PATHS.DASHBOARD} element={<DashboardLayout />}>
+      <Route index element={<DashboardPage />} />
+      <Route path={ROUTE_PATHS.COLORS} element={<ColorsPage />} />
+      <Route path={ROUTE_PATHS.COMPONENTS} element={<ComponentsPage />} />
+      <Route path={ROUTE_PATHS.USER_MANAGEMENT} element={<UserManagementPage />} />
+      <Route path={ROUTE_PATHS.CUSTOM_ROLES}    element={<CustomRolesPage />} />
+      <Route path={ROUTE_PATHS.ASSESSMENT_BUILDER} element={<AssessmentBuilderPage />} />
+      {/* Assessment Routes */}
+      <Route path={ROUTE_PATHS.PENDING_ASSESSMENTS} element={<PendingAssessmentsPage />} />
+      <Route path={ROUTE_PATHS.ASSESSMENT} element={<AssessmentPage />} />
+      <Route path={ROUTE_PATHS.ASSESSMENT_TRACKING} element={<AssessmentTrackingPage />} />
+      <Route path={ROUTE_PATHS.ASSESSMENT_TRACKING_VIEW} element={<AssessmentTrackingViewPage />} />
+      <Route path={ROUTE_PATHS.SUPERVISOR_APPROVAL} element={<SupervisorApprovalListPage />} />
+      <Route path={ROUTE_PATHS.SUPERVISOR_REVIEW} element={<SupervisorReviewPage />} />
+      <Route path={ROUTE_PATHS.TRUEIN_SYNC} element={<TrueinSyncPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+      <Route path={ROUTE_PATHS.UNAUTHORIZED} element={<NotAuthorizedPage />} />
+    </Route>
   </Route>
 );

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { publicRoutes } from "./public.route";
 import { privateRoutes } from "./private.route";
 import { ROUTE_PATHS } from "@/constants/enum";
+import NotFoundPage from "@/pages/pagenotfound";
 
 export default function AppRoutes() {
   return (
@@ -9,7 +10,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Navigate to={ROUTE_PATHS.LOGIN} replace />} />
       {publicRoutes}
       {privateRoutes}
-      <Route path="*" element={<Navigate to={"*"} replace />} />
+     <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
