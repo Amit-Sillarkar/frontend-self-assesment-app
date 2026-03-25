@@ -17,110 +17,58 @@
 // ─────────────────────────────────────────────
 
 import { baseApi, type ApiResponse, type PaginatedResponse } from "../baseApi";
+import type {
+  UserResponse,
+  CreateUserRequest,
+  UpdateUserRequest,
+  GetUsersParams,
+} from "@/pages/usermanagement/types";
 
-// ── Types (specific to users) ────────────────
-
-export interface UserResponse {
-  id: string;
-  employeeId: string;
-  fullName: string;
-  mobile: string;
-  email: string;
-  roleId: number;
-  customRoleId: number | null;
-  designation: string;
-  reportingSupervisorId: string | null;
-  reportingManagerId: string | null;
-  isRoleAssignmentLocked: boolean;
-  isActive: boolean;
-  preferredLanguage: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateUserRequest {
-  employeeId: string;
-  fullName: string;
-  mobile: string;
-  email: string;
-  password: string;
-  roleId: number;
-  customRoleId?: number | null;
-  designation: string;
-  reportingSupervisorId?: string;
-  isRoleAssignmentLocked?: boolean;
-}
-
-export interface UpdateUserRequest {
-  fullName?: string;
-  designation?: string;
-  email?: string;
-  preferredLanguage?: string;
-  isActive?: boolean;
-  roleId?: number;
-  customRoleId?: number | null;
-  reportingSupervisorId?: string;
-  reportingManagerId?: string;
-  isRoleAssignmentLocked?: boolean;
-}
-
-export interface GetUsersParams {
-  search?: string;
-  isActive?: boolean;
-  page?: number;
-  limit?: number;
-  sortBy?: string; // e.g. "fullName:asc"
-}
-
-// ── Endpoints ────────────────────────────────
 
 export const userApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-
-    // GET /users?search=...&isActive=...&page=...&limit=...&sortBy=...
-    getUsers: builder.query<PaginatedResponse<UserResponse>, GetUsersParams>({
+    getUsers: builder.query<PaginatedResponse<UserResponse>,GetUsersParams | void>({
       query: (params) => ({
         url: "/users",
-        params,
+        ...(params ? { params } : {}),
       }),
+      transformResponse: (response: ApiResponse<PaginatedResponse<UserResponse>>) =>
+        response.data,
       providesTags: (result) =>
         result
           ? [
-              ...result.data.map(({ id }) => ({
-                type: "User" as const,
-                id,
-              })),
-              { type: "User", id: "LIST" },
-            ]
+            ...result.data.map(({ id }) => ({
+              type: "User" as const,
+              id,
+            })),
+            { type: "User", id: "LIST" },
+          ]
           : [{ type: "User", id: "LIST" }],
     }),
 
-    // GET /users/:id
-    getUserById: builder.query<ApiResponse<UserResponse>, string>({
+    getUserById: builder.query<UserResponse, string>({
       query: (id) => `/users/${id}`,
+      transformResponse: (response: ApiResponse<UserResponse>) => response.data,
       providesTags: (_result, _error, id) => [{ type: "User", id }],
     }),
 
-    // POST /users
-    createUser: builder.mutation<ApiResponse<UserResponse>, CreateUserRequest>({
+    createUser: builder.mutation<UserResponse, CreateUserRequest>({
       query: (body) => ({
         url: "/users",
         method: "POST",
         body,
       }),
+      transformResponse: (response: ApiResponse<UserResponse>) => response.data,
       invalidatesTags: [{ type: "User", id: "LIST" }],
     }),
 
-    // PATCH /users/:userId
-    updateUser: builder.mutation<
-      ApiResponse<UserResponse>,
-      { userId: string; body: UpdateUserRequest }
-    >({
+    updateUser: builder.mutation<UserResponse, { userId: string; body: UpdateUserRequest }>({
       query: ({ userId, body }) => ({
         url: `/users/${userId}`,
         method: "PATCH",
         body,
       }),
+      transformResponse: (response: ApiResponse<UserResponse>) => response.data,
       invalidatesTags: (_result, _error, { userId }) => [
         { type: "User", id: userId },
         { type: "User", id: "LIST" },

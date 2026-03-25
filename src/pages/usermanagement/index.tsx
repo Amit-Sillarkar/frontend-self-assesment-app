@@ -1,41 +1,85 @@
-import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom"; 
+import { useState } from "react";
 import {
   EyeIcon,
   PencilIcon,
-  Trash2Icon,
   PlusIcon,
   UploadIcon,
   RefreshCwIcon,
   UserIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUpdateUserMutation } from "@/store/api/userApi";
 
 import PageHeader from "@/components/page-header";
 import TableCard from "@/components/table-card";
 import DataTable from "@/components/data-table";
 import SearchFilterBar from "@/components/search-filter-bar";
-import RoleBadge from "@/components/role-badge";
+import RoleBadge, { CustomRoleBadge } from "@/components/role-badge";
 import { usePagination } from "@/components/table-pagination";
 import { useToast } from "@/components/toast-notification";
-import type { ColumnDef, RowAction } from "@/types/table";
-
-import UserProfileModal from "@/components/common/user-profile-modal";
+import { ConfirmationModal } from "@/components/common/confirmation-modal";
 import UserFormModal from "./components/user-form-modal";
 
-import type { User, UserFormData } from "./types";
-import { MOCK_USERS } from "@/mockdata/users";
-import { PRIMARY_ROLE_OPTIONS } from "@/constants/enum";
+import type { ColumnDef, RowAction } from "@/types/table";
+import type { User } from "./types";
+import { PRIMARY_ROLE_OPTIONS, PRIMARY_ROLES } from "@/constants/enum";
 import { USER_MESSAGES } from "@/constants/messages";
-import { ConfirmationModal } from "@/components/common/confirmation-modal";
+import { useUserHandlers } from "./useUserHandlers";
+import UserViewModal from "./components/viewUser/user-view-modal";
+import TableSkeleton from "@/components/table-skeleton";
 
+const StatusCell = ({ user }: { user: User }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [updateUser, { isLoading }] = useUpdateUserMutation();
+  const handleConfirm = async () => {
+    try {
+      await updateUser({
+        userId: user.id, 
+        body: {
+          isActive: !user.isActive,
+          customRoleId: null
+        }
+      }).unwrap();
+      setIsModalOpen(false);
+    } catch {
+      console.error(USER_MESSAGES.USER_ACTIVATION_FAILED);
+    }
+  };
+
+  return (
+    <div className="flex items-center">
+      <button
+        onClick={() => setIsModalOpen(true)}
+        disabled={isLoading}
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${user.isActive ? "bg-primary" : "bg-gray-300"
+          }`}
+      >
+        <span
+          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-background transition-transform ${user.isActive ? "translate-x-5" : "translate-x-1"
+            }`}
+        />
+      </button>
+      <ConfirmationModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirm}
+        title={user.isActive ? "Deactivate User" : "Activate User"}
+        message={`Are you sure you want to ${user.isActive ? "deactivate" : "activate"} ${user.fullName}?`}
+        confirmText={isLoading ? "Updating..." : "Yes, confirm"}
+        variant={user.isActive ? "danger" : "default"}
+      />
+    </div>
+  );
+};
+
+// ─── Column Definitions (outside component — never recreated) ─────────────────
 const USER_COLUMNS: ColumnDef<User>[] = [
   {
-    key: "empId",
+    key: "employeeId",
     header: "Emp ID",
     width: "w-28",
     render: (u) => (
-      <span className="text-xs font-bold text-foreground">{u.empId}</span>
+      <span className="text-xs font-bold text-foreground">{u.employeeId}</span>
     ),
   },
   {
@@ -56,134 +100,72 @@ const USER_COLUMNS: ColumnDef<User>[] = [
     key: "mobile",
     header: "Mobile",
     hideBelow: "lg",
-    render: (u) => (
-      <span className="text-xs text-muted-foreground">{u.mobile}</span>
-    ),
+    render: (u) => <span className="text-xs text-muted-foreground">{u.mobile}</span>,
   },
   {
     key: "email",
     header: "Email",
     hideBelow: "lg",
-    render: (u) => (
-      <span className="text-xs text-muted-foreground">{u.email}</span>
-    ),
+    render: (u) => <span className="text-xs text-muted-foreground">{u.email}</span>,
   },
   {
-    key: "primaryRole",
+    key: "roleDefinition",
     header: "Primary Role",
-    render: (u) => <RoleBadge role={u.primaryRole} />,
+    render: (u) => <RoleBadge role={u.roleDefinition?.name ?? PRIMARY_ROLES.USER}  />,
+  },
+  {
+    key: "customRole",
+    header: "Custom Role",
+    render: (u) =>
+      u.customRole ? (
+        <CustomRoleBadge role={u.customRole.name} />
+      ) : (
+        <span className="text-xs text-muted-foreground">-</span>
+      ),
+  },
+  {
+    key: "isActive",
+    header: "Status",
+    render: (u) => <StatusCell user={u} />,
   },
 ];
 
 export default function UserManagementPage() {
   const toast = useToast();
-  const [searchParams, setSearchParams] = useSearchParams(); // URL state
-
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-
-  // Derive modal states from URL
-  const isAddOpen = searchParams.get("addUser") === "true";
-  const editUserId = searchParams.get("editUser");
-  const viewUserId = searchParams.get("viewUser");
-  const deleteUserId = searchParams.get("deleteUser");
-
-  const editUser = useMemo(
-    () => users.find((u) => u.id === editUserId) || null,
-    [users, editUserId],
-  );
-  const viewUser = useMemo(
-    () => users.find((u) => u.id === viewUserId) || null,
-    [users, viewUserId],
-  );
-  const deleteUser = useMemo(
-    () => users.find((u) => u.id === deleteUserId) || null,
-    [users, deleteUserId],
-  );
-
-  const filteredUsers = useMemo(() => {
-    const q = search.toLowerCase();
-    return users.filter((u) => {
-      const matchSearch =
-        !q ||
-        u.fullName.toLowerCase().includes(q) ||
-        u.empId.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.mobile.includes(q);
-      const matchRole = roleFilter === "all" || u.primaryRole === roleFilter;
-      return matchSearch && matchRole;
-    });
-  }, [users, search, roleFilter]);
+  const {
+    search,
+    setSearch,
+    roleFilter,
+    setRoleFilter,
+    isLoading, isError,
+    filteredUsers,
+    editUser,
+    viewUser,
+    isAddOpen,
+    openAdd,
+    openEdit,
+    openView,
+    clearModals,
+    handleSubmit,
+    viewUserId,
+  } = useUserHandlers();
 
   const { paginated, PaginationBar } = usePagination(filteredUsers);
-
-  // ── URL Updaters ──────────────────────────────────
-  const clearModals = () => {
-    searchParams.delete("addUser");
-    searchParams.delete("editUser");
-    searchParams.delete("viewUser");
-    searchParams.delete("deleteUser");
-    setSearchParams(searchParams);
-  };
-
-  const openAdd = () => {
-    searchParams.set("addUser", "true");
-    setSearchParams(searchParams);
-  };
-
-  // ── Handlers ──────────────────────────────────────
-  function handleSaveAdd(data: UserFormData) {
-    setUsers((prev) => [...prev, { ...data, id: Date.now().toString() }]);
-    clearModals();
-    toast.success(USER_MESSAGES.CREATE_SUCCESS);
-  }
-
-  function handleSaveEdit(data: UserFormData) {
-    if (!editUser) return;
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === editUser.id ? { ...data, id: editUser.id } : u,
-      ),
-    );
-    clearModals();
-    toast.success(USER_MESSAGES.UPDATE_SUCCESS);
-  }
-
-  function handleDelete() {
-    if (!deleteUser) return;
-    setUsers((prev) => prev.filter((u) => u.id !== deleteUser.id));
-    clearModals();
-    toast.deleted(USER_MESSAGES.DELETE_SUCCESS);
-  }
 
   const rowActions: RowAction<User>[] = [
     {
       icon: <EyeIcon className="w-4 h-4" />,
       label: "View",
-      onClick: (u) => {
-        searchParams.set("viewUser", u.id);
-        setSearchParams(searchParams);
-      },
+      onClick: openView,
     },
     {
       icon: <PencilIcon className="w-4 h-4" />,
       label: "Edit",
-      onClick: (u) => {
-        searchParams.set("editUser", u.id);
-        setSearchParams(searchParams);
-      },
-    },
-    {
-      icon: <Trash2Icon className="w-4 h-4" />,
-      label: "Delete",
-      onClick: (u) => {
-        searchParams.set("deleteUser", u.id);
-        setSearchParams(searchParams);
-      },
-      danger: true,
+      onClick: openEdit,
     },
   ];
+
+  if (isError) return <div className="p-6 text-destructive">{USER_MESSAGES.USER_FETCH_FAILED}</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -239,43 +221,34 @@ export default function UserManagementPage() {
           />
         }
       >
-        <DataTable
-          columns={USER_COLUMNS}
-          data={paginated}
-          actions={rowActions}
-          emptyMessage="No users found. Try adjusting your search or filters."
-        />
-        <PaginationBar />
+
+        {isLoading ? (
+          <TableSkeleton rowCount={6} />
+        ) : (
+          <>
+            <DataTable
+              columns={USER_COLUMNS}
+              data={paginated}
+              actions={rowActions}
+            />
+            <PaginationBar />
+          </>
+        )}
       </TableCard>
 
-      <UserProfileModal 
-        isOpen={!!viewUser} 
-        user={viewUser} 
-        onClose={clearModals} 
-      />
+      {viewUser && (
+        <UserViewModal
+          userId={viewUserId}
+          onClose={clearModals}
+        />
+      )}
 
-      {/* Self-contained Form Modal mapping to Add or Edit */}
       <UserFormModal
         open={isAddOpen || !!editUser}
         mode={isAddOpen ? "add" : "edit"}
         initialData={editUser}
         onClose={clearModals}
-        onSubmit={isAddOpen ? handleSaveAdd : handleSaveEdit}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        variant="danger"
-        open={!!deleteUser}
-        onClose={clearModals}
-        onConfirm={handleDelete}
-        title={USER_MESSAGES.DELETE_CONFIRM_TITLE}
-        message={
-          deleteUser
-            ? USER_MESSAGES.DELETE_CONFIRM_DESC(deleteUser.fullName)
-            : ""
-        }
-        confirmText="Delete User"
+        onSubmit={handleSubmit}
       />
     </div>
   );
