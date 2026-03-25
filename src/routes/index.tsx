@@ -9,6 +9,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Navigate to={ROUTE_PATHS.LOGIN} replace />} />
       {publicRoutes}
       {privateRoutes}
+      <Route path="*" element={<Navigate to={"*"} replace />} />
     </Routes>
   );
 }

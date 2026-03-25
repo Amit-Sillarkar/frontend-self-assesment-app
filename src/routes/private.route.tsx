@@ -14,6 +14,8 @@ import SupervisorApprovalListPage from "@/pages/supervisor-approoval";
 import SupervisorReviewPage from "@/pages/supervisor-approoval/review";
 import TrueinSyncPage from "@/pages/truein-sync";
 import AssessmentTrackingViewPage from "@/pages/assessment-tracking/components/view";
+import NotFoundPage from "@/pages/pagenotfound";
+import NotAuthorizedPage from "@/pages/unauthorized";
 
 // ─────────────────────────────────────────────
 // PRIVATE ROUTES
@@ -36,5 +38,7 @@ export const privateRoutes = (
     <Route path={ROUTE_PATHS.SUPERVISOR_APPROVAL} element={<SupervisorApprovalListPage />} />
     <Route path={ROUTE_PATHS.SUPERVISOR_REVIEW} element={<SupervisorReviewPage />} />
     <Route path={ROUTE_PATHS.TRUEIN_SYNC} element={<TrueinSyncPage />} />
+    <Route path="*" element={<NotFoundPage />} />
+    <Route path={ROUTE_PATHS.UNAUTHORIZED} element={<NotAuthorizedPage />} />
   </Route>
 );

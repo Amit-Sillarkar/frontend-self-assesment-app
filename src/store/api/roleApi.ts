@@ -20,6 +20,7 @@ import { baseApi, type ApiResponse, type PaginatedResponse } from "../baseApi";
 // ── Types (specific to roles) ────────────────
 
 export interface RoleResponse {
+  name: string;
   id: number;
   roleName: string;
   roleType: "PRIMARY" | "CUSTOM";
@@ -52,26 +53,26 @@ export interface CreateCustomRoleRequest {
 
 export const roleApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-
-    // GET /roles?page=...&limit=...&search=...&roleType=...&sortBy=...
-    getRoles: builder.query<PaginatedResponse<RoleResponse>, GetRolesParams>({
+    getRoles: builder.query<
+      ApiResponse<PaginatedResponse<RoleResponse>>,
+      GetRolesParams
+    >({
       query: (params) => ({
         url: "/roles",
         params,
       }),
       providesTags: (result) =>
-        result
+        result?.data?.data
           ? [
-              ...result.data.map(({ id }) => ({
-                type: "Role" as const,
-                id,
-              })),
-              { type: "Role", id: "LIST" },
-            ]
+            ...result.data.data.map(({ id }) => ({
+              type: "Role" as const,
+              id,
+            })),
+            { type: "Role", id: "LIST" },
+          ]
           : [{ type: "Role", id: "LIST" }],
     }),
 
-    // GET /roles?groupBy=roleType
     getRolesGrouped: builder.query<
       ApiResponse<Record<string, RoleResponse[]>>,
       void
@@ -84,10 +85,7 @@ export const roleApi = baseApi.injectEndpoints({
     }),
 
     // POST /roles/custom
-    createCustomRole: builder.mutation<
-      ApiResponse<RoleResponse>,
-      CreateCustomRoleRequest
-    >({
+    createCustomRole: builder.mutation<ApiResponse<RoleResponse>, CreateCustomRoleRequest>({
       query: (body) => ({
         url: "/roles/custom",
         method: "POST",

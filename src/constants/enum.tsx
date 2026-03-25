@@ -25,6 +25,7 @@ export const ROUTE_PATHS = {
   SUPERVISOR_APPROVAL: "/dashboard/supervisor-approval",
   SUPERVISOR_REVIEW: "/dashboard/supervisor-approval/review/:id",
   TRUEIN_SYNC: "/dashboard/truein-sync",
+  UNAUTHORIZED: "/dashboard/unauthorized",   //will update when role integration is done
 };
 
 export const NAV_ITEM_KEYS = {
@@ -54,38 +55,38 @@ export const PERMISSION_GROUPS = {
     label: "Full Access",
     description: "Complete system control",
     permissions: [
-      { key: "VIEW_SYSTEM_LOGS",        label: "View System Logs" },
-      { key: "USER_CREATE",             label: "Create Users" },
-      { key: "USER_MANAGE",             label: "Manage Users" },
-      { key: "MANAGE_HIERARCHY",        label: "Manage Hierarchy" },
-      { key: "ROLE_DEFINE",             label: "Define Roles" },
-      { key: "ASSESSMENT_CREATE",       label: "Create Assessments" },
+      { key: "VIEW_SYSTEM_LOGS", label: "View System Logs" },
+      { key: "USER_CREATE", label: "Create Users" },
+      { key: "USER_MANAGE", label: "Manage Users" },
+      { key: "MANAGE_HIERARCHY", label: "Manage Hierarchy" },
+      { key: "ROLE_DEFINE", label: "Define Roles" },
+      { key: "ASSESSMENT_CREATE", label: "Create Assessments" },
       { key: "FINAL_REVIEW_COMPLETION", label: "Final Review & Cycle End" },
-      { key: "EXPORT_EXCEL",            label: "Export to Excel" },
+      { key: "EXPORT_EXCEL", label: "Export to Excel" },
     ],
   },
   DEPARTMENT_ACCESS: {
     label: "Department Access",
     description: "Access across the department",
     permissions: [
-      { key: "DEPT_REVIEW_COMPLETION",  label: "Review Completion" },
-      { key: "DEPT_VIEW_LOG_FORMS",     label: "View Submitted Forms" },
+      { key: "DEPT_REVIEW_COMPLETION", label: "Review Completion" },
+      { key: "DEPT_VIEW_LOG_FORMS", label: "View Submitted Forms" },
     ],
   },
   TEAM_ACCESS: {
     label: "Team Access",
     description: "Access limited to own team",
     permissions: [
-      { key: "TEAM_REVIEW_COMPLETION",  label: "Review Completion" },
-      { key: "TEAM_VIEW_LOG_FORMS",     label: "View Submitted Forms" },
+      { key: "TEAM_REVIEW_COMPLETION", label: "Review Completion" },
+      { key: "TEAM_VIEW_LOG_FORMS", label: "View Submitted Forms" },
     ],
   },
   SELF_ACCESS: {
     label: "Self Access",
     description: "Personal actions only",
     permissions: [
-      { key: "SUBMIT_ASSESSMENT",       label: "Submit Assessment" },
-      { key: "SELF_VIEW_LOG_FORMS",     label: "View Submitted Forms" },
+      { key: "SUBMIT_ASSESSMENT", label: "Submit Assessment" },
+      { key: "SELF_VIEW_LOG_FORMS", label: "View Submitted Forms" },
     ],
   },
 }
@@ -108,23 +109,22 @@ export type PermissionKey =
 
 
 export const PRIMARY_ROLES = {
-  SUPER_ADMIN: "super_admin",
-  MANAGER:     "manager",
-  SUPERVISOR:  "supervisor",
-  USER_LABOR:  "user_labor",
+  SUPER_ADMIN: "SUPER_ADMIN",
+  MANAGER: "MANAGER",
+  SUPERVISOR: "SUPERVISOR",
+  USER: "USER",
 } as const;
 
 export type PrimaryRole = (typeof PRIMARY_ROLES)[keyof typeof PRIMARY_ROLES];
 
 export const PRIMARY_ROLE_LABELS: Record<PrimaryRole, string> = {
-  super_admin: "Super Admin",
-  manager:     "Manager",
-  supervisor:  "Supervisor",
-  user_labor:  "Labor",
+  SUPER_ADMIN: "Super Admin",
+  MANAGER: "Manager",
+  SUPERVISOR: "Supervisor",
+  USER: "User",
 };
 
-// All role options for dropdowns
-// NOTE: super_admin is excluded from Custom Role assignment
+
 export const PRIMARY_ROLE_OPTIONS = Object.entries(PRIMARY_ROLE_LABELS).map(
   ([value, label]) => ({ value: value as PrimaryRole, label })
 );
@@ -132,3 +132,5 @@ export const PRIMARY_ROLE_OPTIONS = Object.entries(PRIMARY_ROLE_LABELS).map(
 export const ASSIGNABLE_ROLE_OPTIONS = PRIMARY_ROLE_OPTIONS.filter(
   (r) => r.value !== PRIMARY_ROLES.SUPER_ADMIN
 );
+
+
