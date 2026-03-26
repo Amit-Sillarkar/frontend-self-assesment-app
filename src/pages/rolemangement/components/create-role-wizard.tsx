@@ -46,8 +46,8 @@ export default function CreateRoleWizard({ open, existingRoleNames, isSubmitting
               setForm(EMPTY);
               setStep(1);
           }
-          setErrors({ step1: "", step2: "", step3: "" });
       }
+      setErrors({ step1: "", step2: "", step3: "" });
   }, [open]);
 
   useEffect(() => {
@@ -107,11 +107,11 @@ export default function CreateRoleWizard({ open, existingRoleNames, isSubmitting
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-[650px] w-[95vw] h-[85vh] flex flex-col p-0 overflow-hidden bg-background border-border/60 shadow-xl">
+      <DialogContent className="sm:max-w-162.5 w-[95vw] h-[85vh] flex flex-col p-0 overflow-hidden bg-background border-border/60 shadow-xl">
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-border bg-card relative overflow-hidden shrink-0">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary/40" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary to-primary/40" />
           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 shadow-sm border border-primary/10">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 shadow-sm border border-primary/10">
                   <ShieldPlusIcon className="w-5 h-5 text-primary" />
               </div>
               <div className="text-left space-y-0.5">

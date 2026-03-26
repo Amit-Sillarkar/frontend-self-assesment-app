@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { PlusIcon, EyeIcon, Trash2Icon, ShieldIcon, UsersIcon, CalendarIcon, PencilIcon, Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/page-header";
@@ -7,32 +6,43 @@ import DataTable from "@/components/data-table";
 import SearchFilterBar from "@/components/search-filter-bar";
 import { usePagination } from "@/components/table-pagination";
 import type { ColumnDef, RowAction } from "@/types/table";
-
 import CreateRoleWizard from "./components/create-role-wizard";
 import RoleViewModal from "./components/role-view-modal";
 import EditRoleModal from "./components/edit-role-modal";
 import { ROLE_MESSAGES } from "@/constants/messages";
 import { ConfirmationModal } from "@/components/common/confirmation-modal";
-
 import type { CustomRole } from "./types";
 import { useRoleManagement } from "./hooks/useRoleManagement";
 
-function formatDate(iso: string) {
-    if (!iso) return "N/A";
-    return new Date(iso).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
-}
 
 export default function CustomRolesPage() {
     const {
-        roles, search, setSearch, dateFilter, setDateFilter,
-        isLoading, isError, isCreating,
-        isCreateOpen, editRoleData, viewRoleData, deleteRoleData,
-        searchParams, setSearchParams,
-        clearModals, handleCreate, handleEditSave, handleDelete
+        roles,
+        allRoles,
+        search,
+        setSearch,
+        dateFilter,
+        setDateFilter,
+        isLoading,
+        isError,
+        isCreating,
+        isCreateOpen,
+        editRoleData,
+        viewRoleData,
+        deleteRoleData,
+        searchParams,
+        setSearchParams,
+        clearModals,
+        handleCreate,
+        handleEditSave,
+        handleDelete,
+        page,
+        pageSize,
+        totalRecords,
+        totalPages,
+        setPage,
+        setPageSize,
+        formatDate,
     } = useRoleManagement();
 
     // ── Columns ──
@@ -103,29 +113,18 @@ export default function CustomRolesPage() {
     ];
 
     // ── Filtering ──
-    const filteredRoles = useMemo(() => {
-        const q = search.toLowerCase();
-        return roles.filter((r) => {
-            const matchSearch = !q || r.roleName.toLowerCase().includes(q) || r.permissions.some((p) => String(p).toLowerCase().includes(q));
-            const matchDate = (() => {
-                if (dateFilter === "all") return true;
-                const created = new Date(r.createdAt);
-                const now = new Date();
-                if (dateFilter === "this_month") return (created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear());
-                if (dateFilter === "last_3_months") {
-                    const cutoff = new Date(now);
-                    cutoff.setMonth(cutoff.getMonth() - 3);
-                    return created >= cutoff;
-                }
-                return true;
-            })();
-            return matchSearch && matchDate;
-        });
-    }, [roles, search, dateFilter]);
+    const { PaginationBar } = usePagination(roles, {
+        serverSide: true,
+        totalRecords,
+        totalPages,
+        page,
+        pageSize,
+        onPageChange: setPage,
+        onPageSizeChange: setPageSize,
+        isLoading,
+    });
 
-    const { paginated, PaginationBar } = usePagination(filteredRoles);
-    
-    const emptyMessage = isLoading ? <span className="flex items-center gap-2"><Loader2Icon className="w-4 h-4 animate-spin"/> Loading roles...</span> : isError ? "Failed to load roles." : "No custom roles found.";
+    const emptyMessage = isLoading ? <span className="flex items-center gap-2"><Loader2Icon className="w-4 h-4 animate-spin" /> Loading roles...</span> : isError ? "Failed to load roles." : "No custom roles found.";
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -138,24 +137,29 @@ export default function CustomRolesPage() {
             <TableCard
                 title="All Custom Roles"
                 description="Search by role name, permission, or assigned employee"
-                count={filteredRoles.length}
+                count={totalRecords}
                 searchArea={
                     <SearchFilterBar
                         search={search}
                         onSearchChange={setSearch}
                         searchPlaceholder="Search by role or permission..."
-                        filters={[{ value: dateFilter, onChange: setDateFilter, placeholder: "Filter by date", width: "sm:w-44", options: [ { value: "all", label: "All Time" }, { value: "this_month", label: "This Month" }, { value: "last_3_months", label: "Last 3 Months" } ] }]}
+                        filters={[{ value: dateFilter, onChange: setDateFilter, placeholder: "Filter by date", width: "sm:w-44", options: [{ value: "all", label: "All Time" }, { value: "this_month", label: "This Month" }, { value: "last_3_months", label: "Last 3 Months" }] }]}
                     />
                 }
             >
-                <DataTable columns={ROLE_COLUMNS} data={paginated} actions={rowActions} emptyMessage={emptyMessage as any} />
+                <DataTable
+                    columns={ROLE_COLUMNS}
+                    data={roles}
+                    actions={rowActions}
+                    emptyMessage={emptyMessage as string}
+                />
                 <PaginationBar />
             </TableCard>
 
-            <CreateRoleWizard open={isCreateOpen} existingRoleNames={roles.map((r) => r.roleName)} onClose={clearModals} onSubmit={handleCreate} isSubmitting={isCreating} />
+            <CreateRoleWizard open={isCreateOpen} existingRoleNames={allRoles.map((r) => r.roleName)} onClose={clearModals} onSubmit={handleCreate} isSubmitting={isCreating} />
             <RoleViewModal role={viewRoleData} onClose={clearModals} />
             <EditRoleModal isOpen={!!editRoleData} role={editRoleData} onSave={handleEditSave} onClose={clearModals} />
-            
+
             <ConfirmationModal
                 variant="danger"
                 open={!!deleteRoleData}

@@ -1,16 +1,30 @@
-import { baseApi, type ApiResponse, type PaginatedResponse } from "../baseApi";
+import { baseApi, type ApiResponse } from "../baseApi";
 
-// ── Types (specific to roles) ────────────────
+// ── Types ────────────────────────────────
+
+// Backend role shape (fixed based on your API)
 export interface RoleResponse {
   id: number;
-  roleName: string;
+  name: string; // ✅ API uses "name"
   roleType: "PRIMARY" | "CUSTOM";
   isSystemRole: boolean;
   isLocked: boolean;
-  permissions: { id: number; permissionKey: string; label: string; group: string }[] | string[];
-  userCount: number;
+  permissions?: { id: number; permissionKey: string; label: string; group: string; }[] | string[];
+  userCount?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// Backend list response
+export interface RolesListResponse {
+  data: RoleResponse[];
+  type: string;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface GetRolesParams {
@@ -30,47 +44,66 @@ export interface CreateCustomRoleRequest {
   permissionIds: number[];
 }
 
-// ── Endpoints ────────────────────────────────
+// ── API ────────────────────────────────
+
 export const roleApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-
-    // GET /roles?page=...&limit=...&search=...&roleType=...&sortBy=...
-    getRoles: builder.query<PaginatedResponse<RoleResponse>, GetRolesParams>({
+    getRoles: builder.query<{ roles: RoleResponse[]; pagination: RolesListResponse["pagination"] }, GetRolesParams>({
       query: (params) => ({
         url: "/roles",
         params,
       }),
+      transformResponse: (response: ApiResponse<RolesListResponse>) => {
+        return {
+          roles: response.data.data,
+          pagination: response.data.pagination,
+        };
+      },
+
       providesTags: (result) =>
         result
           ? [
-              ...result.data.map(({ id }) => ({
-                type: "Role" as const,
-                id,
-              })),
-              { type: "Role", id: "LIST" },
-            ]
+            ...result.roles.map(({ id }) => ({
+              type: "Role" as const,
+              id,
+            })),
+            { type: "Role", id: "LIST" },
+          ]
           : [{ type: "Role", id: "LIST" }],
     }),
 
-    // GET /roles?groupBy=roleType
+    // ✅ GET /roles?groupBy=roleType
     getRolesGrouped: builder.query<
-      ApiResponse<Record<string, RoleResponse[]>>,
+      Record<string, RoleResponse[]>,
       void
     >({
       query: () => ({
         url: "/roles",
         params: { groupBy: "roleType" },
       }),
+
+      transformResponse: (response: ApiResponse<Record<string, RoleResponse[]>>) => {
+        return response.data;
+      },
+
       providesTags: [{ type: "Role", id: "GROUPED" }],
     }),
 
-    // POST /roles/custom
-    createCustomRole: builder.mutation<ApiResponse<RoleResponse>, CreateCustomRoleRequest>({
+    // ✅ POST /roles/custom
+    createCustomRole: builder.mutation<
+      RoleResponse,
+      CreateCustomRoleRequest
+    >({
       query: (body) => ({
         url: "/roles/custom",
         method: "POST",
         body,
       }),
+
+      transformResponse: (response: ApiResponse<RoleResponse>) => {
+        return response.data; // ✅ unwrap
+      },
+
       invalidatesTags: [
         { type: "Role", id: "LIST" },
         { type: "Role", id: "GROUPED" },
@@ -78,6 +111,8 @@ export const roleApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
+// ── Hooks ────────────────────────────────
 
 export const {
   useGetRolesQuery,
