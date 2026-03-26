@@ -1,18 +1,22 @@
 // ─────────────────────────────────────────────
 // FILE: src/components/table-pagination.tsx
 //
-// Reusable pagination bar used at the bottom of
-// every DataTable. Shows "per page" selector
-// (10 / 25 / 50) and page navigation.
+// Supports TWO modes:
 //
-// NOTE: Currently uses client-side slicing.
-// When API is ready, just change `onChange` to
-// fire an API call instead of local state update.
+// 1. CLIENT-SIDE (default) — pass only `data`:
+//    const { paginated, PaginationBar } = usePagination(data);
 //
-// USAGE:
-//   const { page, pageSize, paginated, PaginationBar } = usePagination(data);
-//   // Use `paginated` as the data array for <DataTable>
-//   // Render <PaginationBar /> inside <TableCard> footer slot
+// 2. SERVER-SIDE — pass `data` + server options:
+//    const { PaginationBar } = usePagination(roles, {
+//        serverSide: true,
+//        totalRecords: pagination.total,
+//        totalPages: pagination.totalPages,
+//        page, pageSize,
+//        onPageChange: setPage,
+//        onPageSizeChange: setPageSize,
+//        isLoading,
+//    });
+//    // In server mode, `paginated` === `data` (already sliced by API)
 // ─────────────────────────────────────────────
 
 import { useState, useMemo } from "react";
@@ -29,38 +33,75 @@ import {
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
+// ── Server-side options ───────────────────────
+interface ServerSideOptions {
+  serverSide: true;
+  totalRecords: number;
+  totalPages: number;
+  page: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  isLoading?: boolean;
+}
+
 // ── Hook ──────────────────────────────────────
+export function usePagination<T>(data: T[], serverOptions?: ServerSideOptions) {
+  // ── Client-side state (only used when NOT server-side) ──
+  const [clientPage, setClientPage] = useState(1);
+  const [clientPageSize, setClientPageSize] = useState<PageSize>(10);
 
-export function usePagination<T>(data: T[]) {
-  const [page, setPage]         = useState(1);
-  const [pageSize, setPageSize] = useState<PageSize>(10);
+  const isServer = serverOptions?.serverSide === true;
 
-  // Reset to page 1 whenever data length changes (filter applied)
-  const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
-  const safePage   = Math.min(page, totalPages);
+  // Resolve which values to use
+  const page = isServer ? serverOptions!.page : clientPage;
+  const pageSize = isServer ? serverOptions!.pageSize : clientPageSize;
+  const totalRecs = isServer ? serverOptions!.totalRecords : data.length;
+  const totalPages = isServer
+    ? serverOptions!.totalPages
+    : Math.max(1, Math.ceil(data.length / clientPageSize));
 
+  const isLoading = isServer ? (serverOptions!.isLoading ?? false) : false;
+
+  // Client-side slice (no-op in server mode — API already sliced)
   const paginated = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [data, safePage, pageSize]);
+    if (isServer) return data;
+    const safePage = Math.min(clientPage, totalPages);
+    const start = (safePage - 1) * clientPageSize;
+    return data.slice(start, start + clientPageSize);
+  }, [data, isServer, clientPage, clientPageSize, totalPages]);
 
   function handlePageSizeChange(val: string) {
-    setPageSize(Number(val) as PageSize);
-    setPage(1);
+    const size = Number(val) as PageSize;
+    if (isServer) {
+      serverOptions!.onPageSizeChange(size);
+    } else {
+      setClientPageSize(size);
+      setClientPage(1);
+    }
+  }
+
+  function handlePageChange(p: number) {
+    if (isServer) {
+      serverOptions!.onPageChange(p);
+    } else {
+      setClientPage(p);
+    }
   }
 
   function PaginationBar() {
-    const start = data.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
-    const end   = Math.min(safePage * pageSize, data.length);
+    const safePage = Math.min(page, totalPages);
+    const start = totalRecs === 0 ? 0 : (safePage - 1) * pageSize + 1;
+    const end = Math.min(safePage * pageSize, totalRecs);
 
     return (
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-t border-border bg-muted/20">
         {/* Left: count + per-page selector */}
         <div className="flex items-center gap-3">
           <p className="text-xs text-muted-foreground whitespace-nowrap">
-            {data.length === 0
+            {totalRecs === 0
               ? "No records"
-              : `Showing ${start}–${end} of ${data.length}`}
+              : `Showing ${start}–${end} of ${totalRecs}`}
           </p>
 
           <div className="flex items-center gap-2">
@@ -87,13 +128,12 @@ export function usePagination<T>(data: T[]) {
               variant="outline"
               size="sm"
               className="h-7 w-7 p-0"
-              disabled={safePage === 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1 || isLoading}
+              onClick={() => handlePageChange(safePage - 1)}
             >
               <ChevronLeftIcon className="w-3.5 h-3.5" />
             </Button>
 
-            {/* Page number pills */}
             {Array.from({ length: totalPages }, (_, i) => i + 1)
               .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
               .reduce<(number | "...")[]>((acc, p, idx, arr) => {
@@ -112,7 +152,8 @@ export function usePagination<T>(data: T[]) {
                     variant={item === safePage ? "default" : "outline"}
                     size="sm"
                     className="h-7 w-7 p-0 text-xs"
-                    onClick={() => setPage(item as number)}
+                    disabled={isLoading}
+                    onClick={() => handlePageChange(item as number)}
                   >
                     {item}
                   </Button>
@@ -123,8 +164,8 @@ export function usePagination<T>(data: T[]) {
               variant="outline"
               size="sm"
               className="h-7 w-7 p-0"
-              disabled={safePage === totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages || isLoading}
+              onClick={() => handlePageChange(safePage + 1)}
             >
               <ChevronRightIcon className="w-3.5 h-3.5" />
             </Button>
@@ -134,5 +175,5 @@ export function usePagination<T>(data: T[]) {
     );
   }
 
-  return { page: safePage, pageSize, paginated, totalPages, PaginationBar };
+  return { page, pageSize, paginated, totalPages, PaginationBar };
 }
