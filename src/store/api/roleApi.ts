@@ -1,32 +1,13 @@
-// ─────────────────────────────────────────────
-// FILE: src/store/api/roleApi.ts
-//
-// Endpoints from Postman → roles folder:
-//   GET  /roles                  → getRoles (paginated + filtered)
-//   GET  /roles?groupBy=roleType → getRolesGrouped
-//   POST /roles/custom           → createCustomRole
-//
-// CACHE:
-//   createCustomRole → auto refetches both list + grouped
-//
-// USAGE:
-//   const { data } = useGetRolesQuery({ page: 1, limit: 10 });
-//   const { data: grouped } = useGetRolesGroupedQuery();
-//   const [createRole] = useCreateCustomRoleMutation();
-// ─────────────────────────────────────────────
-
 import { baseApi, type ApiResponse, type PaginatedResponse } from "../baseApi";
 
 // ── Types (specific to roles) ────────────────
-
 export interface RoleResponse {
-  name: string;
   id: number;
   roleName: string;
   roleType: "PRIMARY" | "CUSTOM";
   isSystemRole: boolean;
   isLocked: boolean;
-  permissions: { id: number; permissionKey: string; label: string; group: string }[];
+  permissions: { id: number; permissionKey: string; label: string; group: string }[] | string[];
   userCount: number;
   createdAt: string;
   updatedAt: string;
@@ -50,29 +31,28 @@ export interface CreateCustomRoleRequest {
 }
 
 // ── Endpoints ────────────────────────────────
-
 export const roleApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getRoles: builder.query<
-      ApiResponse<PaginatedResponse<RoleResponse>>,
-      GetRolesParams
-    >({
+
+    // GET /roles?page=...&limit=...&search=...&roleType=...&sortBy=...
+    getRoles: builder.query<PaginatedResponse<RoleResponse>, GetRolesParams>({
       query: (params) => ({
         url: "/roles",
         params,
       }),
       providesTags: (result) =>
-        result?.data?.data
+        result
           ? [
-            ...result.data.data.map(({ id }) => ({
-              type: "Role" as const,
-              id,
-            })),
-            { type: "Role", id: "LIST" },
-          ]
+              ...result.data.map(({ id }) => ({
+                type: "Role" as const,
+                id,
+              })),
+              { type: "Role", id: "LIST" },
+            ]
           : [{ type: "Role", id: "LIST" }],
     }),
 
+    // GET /roles?groupBy=roleType
     getRolesGrouped: builder.query<
       ApiResponse<Record<string, RoleResponse[]>>,
       void

@@ -1,8 +1,4 @@
-// ─────────────────────────────────────────────
-// FILE: src/pages/custom-roles/types.ts
-// ─────────────────────────────────────────────
-
-import type { PrimaryRole, PermissionKey } from "@/constants/enum";
+import type { PrimaryRole } from "@/constants/enum";
 
 export interface AssignedEmployee {
   id: string;
@@ -15,14 +11,14 @@ export interface CustomRole {
   id: string;
   roleName: string;
   assignedEmployees: AssignedEmployee[];
-  permissions: PermissionKey[];
+  permissions: string[];
   createdBy: string;
-  createdAt: string; // ISO date string
+  createdAt: string; 
 }
 
-// Wizard form state — built up across 3 steps
+// Wizard form state matched precisely to backend payload needs
 export interface CustomRoleFormData {
   roleName: string;
   assignedEmployeeIds: string[];
-  permissions: PermissionKey[];
+  permissionIds: number[]; 
 }
