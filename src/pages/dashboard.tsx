@@ -218,7 +218,7 @@ export default function Dashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
               <span className="font-medium text-muted-foreground">Role:</span>
-              <span className="md:col-span-2 capitalize">{user?.role?.toLowerCase()}</span>
+              <span className="md:col-span-2 capitalize">{user?.role?.name?.toLowerCase()}</span>
             </div>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
               <span className="font-medium text-muted-foreground">User ID:</span>
